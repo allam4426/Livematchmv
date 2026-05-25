@@ -11,7 +11,9 @@ export const matchEventsTable = pgTable("match_events", {
   minute: text("minute").notNull(),
   teamId: integer("team_id").notNull().references(() => teamsTable.id),
   playerName: text("player_name").notNull(),
+  playerNumber: text("player_number"),
   assistPlayerName: text("assist_player_name"),
+  description: text("description"),
 });
 
 export const insertMatchEventSchema = createInsertSchema(matchEventsTable).omit({ id: true });

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, matchesTable, teamsTable, highlightsTable, streamsTable } from "@workspace/db";
+import { db, matchesTable, teamsTable, highlightsTable, streamsTable, tournamentsTable } from "@workspace/db";
 import { eq, count, sql } from "drizzle-orm";
 
 const router = Router();
@@ -11,6 +11,7 @@ router.get("/stats/summary", async (req, res) => {
   const [teamCount] = await db.select({ count: count() }).from(teamsTable);
   const [highlightCount] = await db.select({ count: count() }).from(highlightsTable);
   const [streamCount] = await db.select({ count: count() }).from(streamsTable);
+  const [tournamentCount] = await db.select({ count: count() }).from(tournamentsTable);
 
   res.json({
     liveMatchCount: liveCount.count,
@@ -19,6 +20,7 @@ router.get("/stats/summary", async (req, res) => {
     totalTeams: teamCount.count,
     totalHighlights: highlightCount.count,
     totalStreams: streamCount.count,
+    totalTournaments: tournamentCount.count,
   });
 });
 

@@ -6,8 +6,9 @@ export const teamsTable = pgTable("teams", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   shortName: text("short_name").notNull(),
-  logoUrl: text("logo_url").notNull(),
+  logoUrl: text("logo_url").notNull().default(""),
   country: text("country").notNull(),
+  sport: text("sport").notNull().default("football"),
 });
 
 export const insertTeamSchema = createInsertSchema(teamsTable).omit({ id: true });

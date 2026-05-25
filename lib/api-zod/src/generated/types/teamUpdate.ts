@@ -5,10 +5,12 @@
  * FootballLive API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { TeamUpdateSport } from './teamUpdateSport';
 
 export interface TeamUpdate {
   name?: string;
   shortName?: string;
   logoUrl?: string;
   country?: string;
+  sport?: TeamUpdateSport;
 }

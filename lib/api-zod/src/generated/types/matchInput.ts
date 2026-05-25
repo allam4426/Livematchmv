@@ -5,6 +5,7 @@
  * FootballLive API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MatchInputSport } from './matchInputSport';
 import type { MatchInputStatus } from './matchInputStatus';
 
 export interface MatchInput {
@@ -18,4 +19,7 @@ export interface MatchInput {
   competitionLogo?: string;
   kickoffAt: Date;
   featured?: boolean;
+  sport: MatchInputSport;
+  tournamentId?: number;
+  venue?: string;
 }

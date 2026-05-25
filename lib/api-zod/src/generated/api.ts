@@ -9,7 +9,6 @@ import * as zod from 'zod';
 
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -18,218 +17,60 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * @summary List all matches
+ * @summary Admin login
  */
-export const listMatchesQueryLimitDefault = 50;
-
-export const ListMatchesQueryParams = zod.object({
-  "status": zod.enum(['live', 'scheduled', 'finished', 'all']).optional(),
-  "competition": zod.coerce.string().optional(),
-  "limit": zod.coerce.number().default(listMatchesQueryLimitDefault)
+export const AdminLoginBody = zod.object({
+  "password": zod.string()
 })
 
-export const ListMatchesResponseItem = zod.object({
-  "id": zod.number(),
-  "homeTeam": zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "shortName": zod.string(),
-  "logoUrl": zod.string(),
-  "country": zod.string()
-}),
-  "awayTeam": zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "shortName": zod.string(),
-  "logoUrl": zod.string(),
-  "country": zod.string()
-}),
-  "homeScore": zod.number(),
-  "awayScore": zod.number(),
-  "status": zod.enum(['live', 'scheduled', 'finished', 'postponed']),
-  "minute": zod.string().nullable(),
-  "competition": zod.string(),
-  "competitionLogo": zod.string().nullish(),
-  "kickoffAt": zod.coerce.date(),
-  "streamCount": zod.number(),
-  "featured": zod.boolean().optional()
-})
-export const ListMatchesResponse = zod.array(ListMatchesResponseItem)
-
-
-/**
- * @summary Create a new match (admin)
- */
-export const CreateMatchBody = zod.object({
-  "homeTeamId": zod.number(),
-  "awayTeamId": zod.number(),
-  "homeScore": zod.number().optional(),
-  "awayScore": zod.number().optional(),
-  "status": zod.enum(['live', 'scheduled', 'finished', 'postponed']).optional(),
-  "minute": zod.string().optional(),
-  "competition": zod.string(),
-  "competitionLogo": zod.string().optional(),
-  "kickoffAt": zod.coerce.date(),
-  "featured": zod.boolean().optional()
+export const AdminLoginResponse = zod.object({
+  "authenticated": zod.boolean()
 })
 
 
 /**
- * @summary List currently live matches
+ * @summary Admin logout
  */
-export const ListLiveMatchesResponseItem = zod.object({
-  "id": zod.number(),
-  "homeTeam": zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "shortName": zod.string(),
-  "logoUrl": zod.string(),
-  "country": zod.string()
-}),
-  "awayTeam": zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "shortName": zod.string(),
-  "logoUrl": zod.string(),
-  "country": zod.string()
-}),
-  "homeScore": zod.number(),
-  "awayScore": zod.number(),
-  "status": zod.enum(['live', 'scheduled', 'finished', 'postponed']),
-  "minute": zod.string().nullable(),
-  "competition": zod.string(),
-  "competitionLogo": zod.string().nullish(),
-  "kickoffAt": zod.coerce.date(),
-  "streamCount": zod.number(),
-  "featured": zod.boolean().optional()
-})
-export const ListLiveMatchesResponse = zod.array(ListLiveMatchesResponseItem)
-
-
-/**
- * @summary Get a single match by ID
- */
-export const GetMatchParams = zod.object({
-  "id": zod.coerce.number()
-})
-
-export const GetMatchResponse = zod.object({
-  "id": zod.number(),
-  "homeTeam": zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "shortName": zod.string(),
-  "logoUrl": zod.string(),
-  "country": zod.string()
-}),
-  "awayTeam": zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "shortName": zod.string(),
-  "logoUrl": zod.string(),
-  "country": zod.string()
-}),
-  "homeScore": zod.number(),
-  "awayScore": zod.number(),
-  "status": zod.enum(['live', 'scheduled', 'finished', 'postponed']),
-  "minute": zod.string().nullable(),
-  "competition": zod.string(),
-  "competitionLogo": zod.string().nullish(),
-  "kickoffAt": zod.coerce.date(),
-  "streamCount": zod.number().optional(),
-  "featured": zod.boolean().optional(),
-  "streams": zod.array(zod.object({
-  "id": zod.number(),
-  "matchId": zod.number(),
-  "label": zod.string(),
-  "url": zod.string(),
-  "quality": zod.enum(['HD', 'SD', 'FHD']),
-  "language": zod.string(),
-  "embedCode": zod.string().nullish()
-})),
-  "events": zod.array(zod.object({
-  "id": zod.number(),
-  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'substitution', 'penalty']),
-  "minute": zod.string(),
-  "teamId": zod.number(),
-  "playerName": zod.string(),
-  "assistPlayerName": zod.string().nullish()
-}))
+export const AdminLogoutResponse = zod.object({
+  "authenticated": zod.boolean()
 })
 
 
 /**
- * @summary Update a match (admin)
+ * @summary Get admin auth status
  */
-export const UpdateMatchParams = zod.object({
-  "id": zod.coerce.number()
-})
-
-export const UpdateMatchBody = zod.object({
-  "homeScore": zod.number().optional(),
-  "awayScore": zod.number().optional(),
-  "status": zod.enum(['live', 'scheduled', 'finished', 'postponed']).optional(),
-  "minute": zod.string().optional(),
-  "featured": zod.boolean().optional()
-})
-
-export const UpdateMatchResponse = zod.object({
-  "id": zod.number(),
-  "homeTeam": zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "shortName": zod.string(),
-  "logoUrl": zod.string(),
-  "country": zod.string()
-}),
-  "awayTeam": zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "shortName": zod.string(),
-  "logoUrl": zod.string(),
-  "country": zod.string()
-}),
-  "homeScore": zod.number(),
-  "awayScore": zod.number(),
-  "status": zod.enum(['live', 'scheduled', 'finished', 'postponed']),
-  "minute": zod.string().nullable(),
-  "competition": zod.string(),
-  "competitionLogo": zod.string().nullish(),
-  "kickoffAt": zod.coerce.date(),
-  "streamCount": zod.number(),
-  "featured": zod.boolean().optional()
-})
-
-
-/**
- * @summary Delete a match (admin)
- */
-export const DeleteMatchParams = zod.object({
-  "id": zod.coerce.number()
+export const AdminMeResponse = zod.object({
+  "authenticated": zod.boolean()
 })
 
 
 /**
  * @summary List all teams
  */
+export const ListTeamsQueryParams = zod.object({
+  "sport": zod.enum(['football', 'futsal', 'all']).optional()
+})
+
 export const ListTeamsResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "shortName": zod.string(),
   "logoUrl": zod.string(),
-  "country": zod.string()
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
 })
 export const ListTeamsResponse = zod.array(ListTeamsResponseItem)
 
 
 /**
- * @summary Create a team (admin)
+ * @summary Create a team
  */
 export const CreateTeamBody = zod.object({
   "name": zod.string(),
   "shortName": zod.string(),
-  "logoUrl": zod.string(),
-  "country": zod.string()
+  "logoUrl": zod.string().optional(),
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
 })
 
 
@@ -245,7 +86,8 @@ export const GetTeamResponse = zod.object({
   "name": zod.string(),
   "shortName": zod.string(),
   "logoUrl": zod.string(),
-  "country": zod.string()
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
 })
 
 
@@ -260,7 +102,8 @@ export const UpdateTeamBody = zod.object({
   "name": zod.string().optional(),
   "shortName": zod.string().optional(),
   "logoUrl": zod.string().optional(),
-  "country": zod.string().optional()
+  "country": zod.string().optional(),
+  "sport": zod.enum(['football', 'futsal']).optional()
 })
 
 export const UpdateTeamResponse = zod.object({
@@ -268,15 +111,488 @@ export const UpdateTeamResponse = zod.object({
   "name": zod.string(),
   "shortName": zod.string(),
   "logoUrl": zod.string(),
-  "country": zod.string()
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
 })
 
 
 /**
- * @summary Delete a team (admin)
+ * @summary Delete a team
  */
 export const DeleteTeamParams = zod.object({
   "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary List all tournaments
+ */
+export const ListTournamentsQueryParams = zod.object({
+  "sport": zod.enum(['football', 'futsal', 'all']).optional()
+})
+
+export const ListTournamentsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "sport": zod.enum(['football', 'futsal']),
+  "season": zod.string(),
+  "logoUrl": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "active": zod.boolean()
+})
+export const ListTournamentsResponse = zod.array(ListTournamentsResponseItem)
+
+
+/**
+ * @summary Create a tournament
+ */
+export const CreateTournamentBody = zod.object({
+  "name": zod.string(),
+  "sport": zod.enum(['football', 'futsal']),
+  "season": zod.string(),
+  "logoUrl": zod.string().optional(),
+  "description": zod.string().optional()
+})
+
+
+/**
+ * @summary Get a tournament
+ */
+export const GetTournamentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetTournamentResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "sport": zod.enum(['football', 'futsal']),
+  "season": zod.string(),
+  "logoUrl": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "active": zod.boolean()
+})
+
+
+/**
+ * @summary Update a tournament
+ */
+export const UpdateTournamentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateTournamentBody = zod.object({
+  "name": zod.string().optional(),
+  "sport": zod.enum(['football', 'futsal']).optional(),
+  "season": zod.string().optional(),
+  "logoUrl": zod.string().optional(),
+  "description": zod.string().optional(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateTournamentResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "sport": zod.enum(['football', 'futsal']),
+  "season": zod.string(),
+  "logoUrl": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "active": zod.boolean()
+})
+
+
+/**
+ * @summary Delete a tournament
+ */
+export const DeleteTournamentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Get tournament standings
+ */
+export const GetTournamentStandingsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetTournamentStandingsResponseItem = zod.object({
+  "position": zod.number(),
+  "team": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string(),
+  "logoUrl": zod.string(),
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
+}),
+  "played": zod.number(),
+  "won": zod.number(),
+  "drawn": zod.number(),
+  "lost": zod.number(),
+  "goalsFor": zod.number(),
+  "goalsAgainst": zod.number(),
+  "goalDifference": zod.number(),
+  "points": zod.number()
+})
+export const GetTournamentStandingsResponse = zod.array(GetTournamentStandingsResponseItem)
+
+
+/**
+ * @summary List all matches
+ */
+export const listMatchesQueryLimitDefault = 50;
+
+export const ListMatchesQueryParams = zod.object({
+  "status": zod.enum(['live', 'scheduled', 'finished', 'all']).optional(),
+  "competition": zod.coerce.string().optional(),
+  "sport": zod.enum(['football', 'futsal', 'all']).optional(),
+  "tournamentId": zod.coerce.number().optional(),
+  "limit": zod.coerce.number().default(listMatchesQueryLimitDefault)
+})
+
+export const ListMatchesResponseItem = zod.object({
+  "id": zod.number(),
+  "homeTeam": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string(),
+  "logoUrl": zod.string(),
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
+}),
+  "awayTeam": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string(),
+  "logoUrl": zod.string(),
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
+}),
+  "homeScore": zod.number(),
+  "awayScore": zod.number(),
+  "status": zod.enum(['live', 'scheduled', 'finished', 'postponed']),
+  "minute": zod.string().nullable(),
+  "competition": zod.string(),
+  "competitionLogo": zod.string().nullish(),
+  "kickoffAt": zod.coerce.date(),
+  "streamCount": zod.number(),
+  "featured": zod.boolean().optional(),
+  "sport": zod.enum(['football', 'futsal']),
+  "tournamentId": zod.number().nullish(),
+  "venue": zod.string().nullish()
+})
+export const ListMatchesResponse = zod.array(ListMatchesResponseItem)
+
+
+/**
+ * @summary Create a new match
+ */
+export const CreateMatchBody = zod.object({
+  "homeTeamId": zod.number(),
+  "awayTeamId": zod.number(),
+  "homeScore": zod.number().optional(),
+  "awayScore": zod.number().optional(),
+  "status": zod.enum(['live', 'scheduled', 'finished', 'postponed']).optional(),
+  "minute": zod.string().optional(),
+  "competition": zod.string(),
+  "competitionLogo": zod.string().optional(),
+  "kickoffAt": zod.coerce.date(),
+  "featured": zod.boolean().optional(),
+  "sport": zod.enum(['football', 'futsal']),
+  "tournamentId": zod.number().optional(),
+  "venue": zod.string().optional()
+})
+
+
+/**
+ * @summary List currently live matches
+ */
+export const ListLiveMatchesQueryParams = zod.object({
+  "sport": zod.enum(['football', 'futsal', 'all']).optional()
+})
+
+export const ListLiveMatchesResponseItem = zod.object({
+  "id": zod.number(),
+  "homeTeam": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string(),
+  "logoUrl": zod.string(),
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
+}),
+  "awayTeam": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string(),
+  "logoUrl": zod.string(),
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
+}),
+  "homeScore": zod.number(),
+  "awayScore": zod.number(),
+  "status": zod.enum(['live', 'scheduled', 'finished', 'postponed']),
+  "minute": zod.string().nullable(),
+  "competition": zod.string(),
+  "competitionLogo": zod.string().nullish(),
+  "kickoffAt": zod.coerce.date(),
+  "streamCount": zod.number(),
+  "featured": zod.boolean().optional(),
+  "sport": zod.enum(['football', 'futsal']),
+  "tournamentId": zod.number().nullish(),
+  "venue": zod.string().nullish()
+})
+export const ListLiveMatchesResponse = zod.array(ListLiveMatchesResponseItem)
+
+
+/**
+ * @summary Get a single match
+ */
+export const GetMatchParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetMatchResponse = zod.object({
+  "id": zod.number(),
+  "homeTeam": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string(),
+  "logoUrl": zod.string(),
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
+}),
+  "awayTeam": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string(),
+  "logoUrl": zod.string(),
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
+}),
+  "homeScore": zod.number(),
+  "awayScore": zod.number(),
+  "status": zod.enum(['live', 'scheduled', 'finished', 'postponed']),
+  "minute": zod.string().nullable(),
+  "competition": zod.string(),
+  "competitionLogo": zod.string().nullish(),
+  "kickoffAt": zod.coerce.date(),
+  "streamCount": zod.number().optional(),
+  "featured": zod.boolean().optional(),
+  "sport": zod.enum(['football', 'futsal']),
+  "tournamentId": zod.number().nullish(),
+  "venue": zod.string().nullish(),
+  "streams": zod.array(zod.object({
+  "id": zod.number(),
+  "matchId": zod.number(),
+  "label": zod.string(),
+  "url": zod.string(),
+  "quality": zod.enum(['HD', 'SD', 'FHD']),
+  "language": zod.string(),
+  "embedCode": zod.string().nullish()
+})),
+  "events": zod.array(zod.object({
+  "id": zod.number(),
+  "matchId": zod.number(),
+  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'own_goal', 'penalty_awarded', 'penalty_goal', 'penalty_missed', 'substitution', 'mvp']),
+  "minute": zod.string(),
+  "teamId": zod.number(),
+  "playerName": zod.string(),
+  "playerNumber": zod.string().nullish(),
+  "assistPlayerName": zod.string().nullish(),
+  "description": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Update a match
+ */
+export const UpdateMatchParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateMatchBody = zod.object({
+  "homeScore": zod.number().optional(),
+  "awayScore": zod.number().optional(),
+  "status": zod.enum(['live', 'scheduled', 'finished', 'postponed']).optional(),
+  "minute": zod.string().optional(),
+  "featured": zod.boolean().optional(),
+  "venue": zod.string().optional()
+})
+
+export const UpdateMatchResponse = zod.object({
+  "id": zod.number(),
+  "homeTeam": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string(),
+  "logoUrl": zod.string(),
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
+}),
+  "awayTeam": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string(),
+  "logoUrl": zod.string(),
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
+}),
+  "homeScore": zod.number(),
+  "awayScore": zod.number(),
+  "status": zod.enum(['live', 'scheduled', 'finished', 'postponed']),
+  "minute": zod.string().nullable(),
+  "competition": zod.string(),
+  "competitionLogo": zod.string().nullish(),
+  "kickoffAt": zod.coerce.date(),
+  "streamCount": zod.number(),
+  "featured": zod.boolean().optional(),
+  "sport": zod.enum(['football', 'futsal']),
+  "tournamentId": zod.number().nullish(),
+  "venue": zod.string().nullish()
+})
+
+
+/**
+ * @summary Delete a match
+ */
+export const DeleteMatchParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Get all events for a match
+ */
+export const ListMatchEventsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListMatchEventsResponseItem = zod.object({
+  "id": zod.number(),
+  "matchId": zod.number(),
+  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'own_goal', 'penalty_awarded', 'penalty_goal', 'penalty_missed', 'substitution', 'mvp']),
+  "minute": zod.string(),
+  "teamId": zod.number(),
+  "playerName": zod.string(),
+  "playerNumber": zod.string().nullish(),
+  "assistPlayerName": zod.string().nullish(),
+  "description": zod.string().nullish()
+})
+export const ListMatchEventsResponse = zod.array(ListMatchEventsResponseItem)
+
+
+/**
+ * @summary Add a match event
+ */
+export const CreateMatchEventParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CreateMatchEventBody = zod.object({
+  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'own_goal', 'penalty_awarded', 'penalty_goal', 'penalty_missed', 'substitution', 'mvp']),
+  "minute": zod.string(),
+  "teamId": zod.number(),
+  "playerName": zod.string(),
+  "playerNumber": zod.string().optional(),
+  "assistPlayerName": zod.string().optional(),
+  "description": zod.string().optional()
+})
+
+
+/**
+ * @summary Update a match event
+ */
+export const UpdateMatchEventParams = zod.object({
+  "id": zod.coerce.number(),
+  "eventId": zod.coerce.number()
+})
+
+export const UpdateMatchEventBody = zod.object({
+  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'own_goal', 'penalty_awarded', 'penalty_goal', 'penalty_missed', 'substitution', 'mvp']),
+  "minute": zod.string(),
+  "teamId": zod.number(),
+  "playerName": zod.string(),
+  "playerNumber": zod.string().optional(),
+  "assistPlayerName": zod.string().optional(),
+  "description": zod.string().optional()
+})
+
+export const UpdateMatchEventResponse = zod.object({
+  "id": zod.number(),
+  "matchId": zod.number(),
+  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'own_goal', 'penalty_awarded', 'penalty_goal', 'penalty_missed', 'substitution', 'mvp']),
+  "minute": zod.string(),
+  "teamId": zod.number(),
+  "playerName": zod.string(),
+  "playerNumber": zod.string().nullish(),
+  "assistPlayerName": zod.string().nullish(),
+  "description": zod.string().nullish()
+})
+
+
+/**
+ * @summary Delete a match event
+ */
+export const DeleteMatchEventParams = zod.object({
+  "id": zod.coerce.number(),
+  "eventId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Get match lineup
+ */
+export const GetMatchLineupParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetMatchLineupResponse = zod.object({
+  "matchId": zod.number(),
+  "home": zod.array(zod.object({
+  "id": zod.number(),
+  "matchId": zod.number(),
+  "teamId": zod.number(),
+  "playerNumber": zod.string(),
+  "playerName": zod.string(),
+  "position": zod.string().nullish(),
+  "isStarting": zod.boolean()
+})),
+  "away": zod.array(zod.object({
+  "id": zod.number(),
+  "matchId": zod.number(),
+  "teamId": zod.number(),
+  "playerNumber": zod.string(),
+  "playerName": zod.string(),
+  "position": zod.string().nullish(),
+  "isStarting": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Add a player to the lineup
+ */
+export const AddLineupPlayerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AddLineupPlayerBody = zod.object({
+  "teamId": zod.number(),
+  "playerNumber": zod.string(),
+  "playerName": zod.string(),
+  "position": zod.string().optional(),
+  "isStarting": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Remove a player from lineup
+ */
+export const RemoveLineupPlayerParams = zod.object({
+  "id": zod.coerce.number(),
+  "playerId": zod.coerce.number()
 })
 
 
@@ -300,7 +616,7 @@ export const ListStreamsResponse = zod.array(ListStreamsResponseItem)
 
 
 /**
- * @summary Create a stream link (admin)
+ * @summary Create a stream link
  */
 export const CreateStreamBody = zod.object({
   "matchId": zod.number(),
@@ -313,7 +629,7 @@ export const CreateStreamBody = zod.object({
 
 
 /**
- * @summary Delete a stream (admin)
+ * @summary Delete a stream
  */
 export const DeleteStreamParams = zod.object({
   "id": zod.coerce.number()
@@ -343,14 +659,16 @@ export const ListHighlightsResponseItem = zod.object({
   "name": zod.string(),
   "shortName": zod.string(),
   "logoUrl": zod.string(),
-  "country": zod.string()
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
 }),
   "awayTeam": zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "shortName": zod.string(),
   "logoUrl": zod.string(),
-  "country": zod.string()
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
 }),
   "homeScore": zod.number(),
   "awayScore": zod.number(),
@@ -360,7 +678,7 @@ export const ListHighlightsResponse = zod.array(ListHighlightsResponseItem)
 
 
 /**
- * @summary Create a highlight (admin)
+ * @summary Create a highlight
  */
 export const CreateHighlightBody = zod.object({
   "title": zod.string(),
@@ -395,14 +713,16 @@ export const GetHighlightResponse = zod.object({
   "name": zod.string(),
   "shortName": zod.string(),
   "logoUrl": zod.string(),
-  "country": zod.string()
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
 }),
   "awayTeam": zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "shortName": zod.string(),
   "logoUrl": zod.string(),
-  "country": zod.string()
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
 }),
   "homeScore": zod.number(),
   "awayScore": zod.number(),
@@ -411,7 +731,7 @@ export const GetHighlightResponse = zod.object({
 
 
 /**
- * @summary Delete a highlight (admin)
+ * @summary Delete a highlight
  */
 export const DeleteHighlightParams = zod.object({
   "id": zod.coerce.number()
@@ -427,12 +747,13 @@ export const GetStatsSummaryResponse = zod.object({
   "finishedMatchCount": zod.number(),
   "totalTeams": zod.number(),
   "totalHighlights": zod.number(),
-  "totalStreams": zod.number()
+  "totalStreams": zod.number(),
+  "totalTournaments": zod.number().optional()
 })
 
 
 /**
- * @summary List active competitions with match counts
+ * @summary List active competitions
  */
 export const ListCompetitionsResponseItem = zod.object({
   "name": zod.string(),

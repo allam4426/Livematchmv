@@ -3,3 +3,5 @@ export * from "./matches";
 export * from "./streams";
 export * from "./match_events";
 export * from "./highlights";
+export * from "./tournaments";
+export * from "./lineups";

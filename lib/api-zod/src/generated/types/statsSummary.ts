@@ -13,4 +13,5 @@ export interface StatsSummary {
   totalTeams: number;
   totalHighlights: number;
   totalStreams: number;
+  totalTournaments?: number;
 }

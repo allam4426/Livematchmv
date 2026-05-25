@@ -13,4 +13,5 @@ export interface MatchUpdate {
   status?: MatchUpdateStatus;
   minute?: string;
   featured?: boolean;
+  venue?: string;
 }

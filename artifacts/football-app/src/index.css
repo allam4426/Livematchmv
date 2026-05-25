@@ -102,6 +102,12 @@ html {
   }
 }
 
+@layer components {
+  .admin-input {
+    @apply w-full bg-muted border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary text-xs transition-colors;
+  }
+}
+
 @layer utilities {
   /* Live red pulse */
   .live-dot {

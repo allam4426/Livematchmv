@@ -2,6 +2,7 @@ import { pgTable, serial, integer, text, boolean, timestamp } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { teamsTable } from "./teams";
+import { tournamentsTable } from "./tournaments";
 
 export const matchesTable = pgTable("matches", {
   id: serial("id").primaryKey(),
@@ -15,6 +16,9 @@ export const matchesTable = pgTable("matches", {
   competitionLogo: text("competition_logo"),
   kickoffAt: timestamp("kickoff_at").notNull(),
   featured: boolean("featured").notNull().default(false),
+  sport: text("sport").notNull().default("football"),
+  tournamentId: integer("tournament_id").references(() => tournamentsTable.id, { onDelete: "set null" }),
+  venue: text("venue"),
 });
 
 export const insertMatchSchema = createInsertSchema(matchesTable).omit({ id: true });

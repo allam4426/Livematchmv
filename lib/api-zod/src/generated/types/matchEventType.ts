@@ -13,6 +13,10 @@ export const MatchEventType = {
   goal: 'goal',
   yellow_card: 'yellow_card',
   red_card: 'red_card',
+  own_goal: 'own_goal',
+  penalty_awarded: 'penalty_awarded',
+  penalty_goal: 'penalty_goal',
+  penalty_missed: 'penalty_missed',
   substitution: 'substitution',
-  penalty: 'penalty',
+  mvp: 'mvp',
 } as const;

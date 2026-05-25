@@ -21,8 +21,8 @@ function buildMatch(row: {
 }) {
   return {
     id: row.match.id,
-    homeTeam: row.homeTeam,
-    awayTeam: row.awayTeam,
+    homeTeam: { ...row.homeTeam, sport: row.homeTeam.sport ?? "football" },
+    awayTeam: { ...row.awayTeam, sport: row.awayTeam.sport ?? "football" },
     homeScore: row.match.homeScore,
     awayScore: row.match.awayScore,
     status: row.match.status,
@@ -32,31 +32,10 @@ function buildMatch(row: {
     kickoffAt: row.match.kickoffAt.toISOString(),
     streamCount: row.streamCount,
     featured: row.match.featured,
+    sport: row.match.sport ?? "football",
+    tournamentId: row.match.tournamentId,
+    venue: row.match.venue,
   };
-}
-
-async function getMatchesWithTeams(whereClause?: Parameters<typeof db.select>[0]) {
-  const homeTeam = alias(teamsTable, "homeTeam");
-  const awayTeam = alias(teamsTable, "awayTeam");
-
-  const rows = await db
-    .select({ match: matchesTable, homeTeam, awayTeam })
-    .from(matchesTable)
-    .innerJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
-    .innerJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
-    .orderBy(desc(matchesTable.kickoffAt));
-
-  const matchIds = rows.map(r => r.match.id);
-  const streamCounts = matchIds.length > 0
-    ? await db
-        .select({ matchId: streamsTable.matchId, count: count() })
-        .from(streamsTable)
-        .groupBy(streamsTable.matchId)
-    : [];
-
-  const streamCountMap = new Map(streamCounts.map(s => [s.matchId, Number(s.count)]));
-
-  return rows.map(row => buildMatch({ ...row, streamCount: streamCountMap.get(row.match.id) ?? 0 }));
 }
 
 router.get("/matches", async (req, res) => {
@@ -65,6 +44,9 @@ router.get("/matches", async (req, res) => {
     competition: req.query.competition,
     limit: req.query.limit ? Number(req.query.limit) : 50,
   });
+
+  const sport = req.query.sport as string | undefined;
+  const tournamentId = req.query.tournamentId ? Number(req.query.tournamentId) : undefined;
 
   const homeTeam = alias(teamsTable, "homeTeam");
   const awayTeam = alias(teamsTable, "awayTeam");
@@ -75,6 +57,12 @@ router.get("/matches", async (req, res) => {
   }
   if (params.success && params.data.competition) {
     conditions.push(eq(matchesTable.competition, params.data.competition));
+  }
+  if (sport && sport !== "all") {
+    conditions.push(eq(matchesTable.sport, sport));
+  }
+  if (tournamentId) {
+    conditions.push(eq(matchesTable.tournamentId, tournamentId));
   }
 
   const rows = await db
@@ -101,7 +89,7 @@ router.post("/matches", async (req, res) => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { homeTeamId, awayTeamId, homeScore, awayScore, status, minute, competition, competitionLogo, kickoffAt, featured } = parsed.data;
+  const { homeTeamId, awayTeamId, homeScore, awayScore, status, minute, competition, competitionLogo, kickoffAt, featured, sport, tournamentId, venue } = parsed.data;
   const [match] = await db.insert(matchesTable).values({
     homeTeamId,
     awayTeamId,
@@ -113,6 +101,9 @@ router.post("/matches", async (req, res) => {
     competitionLogo: competitionLogo ?? null,
     kickoffAt: new Date(kickoffAt),
     featured: featured ?? false,
+    sport: sport ?? "football",
+    tournamentId: tournamentId ?? null,
+    venue: venue ?? null,
   }).returning();
 
   const homeTeam = alias(teamsTable, "homeTeam");
@@ -127,16 +118,21 @@ router.post("/matches", async (req, res) => {
   res.status(201).json(buildMatch({ ...row, streamCount: 0 }));
 });
 
+// IMPORTANT: /matches/live must be defined BEFORE /matches/:id
 router.get("/matches/live", async (req, res) => {
+  const sport = req.query.sport as string | undefined;
   const homeTeam = alias(teamsTable, "homeTeam");
   const awayTeam = alias(teamsTable, "awayTeam");
+
+  const conditions = [eq(matchesTable.status, "live")];
+  if (sport && sport !== "all") conditions.push(eq(matchesTable.sport, sport));
 
   const rows = await db
     .select({ match: matchesTable, homeTeam, awayTeam })
     .from(matchesTable)
     .innerJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
     .innerJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
-    .where(eq(matchesTable.status, "live"))
+    .where(and(...conditions))
     .orderBy(desc(matchesTable.kickoffAt));
 
   const matchIds = rows.map(r => r.match.id);
@@ -161,10 +157,7 @@ router.get("/matches/:id", async (req, res) => {
     .innerJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
     .where(eq(matchesTable.id, id));
 
-  if (!row) {
-    res.status(404).json({ error: "Match not found" });
-    return;
-  }
+  if (!row) { res.status(404).json({ error: "Match not found" }); return; }
 
   const [streams, events] = await Promise.all([
     db.select().from(streamsTable).where(eq(streamsTable.matchId, id)),
@@ -174,29 +167,16 @@ router.get("/matches/:id", async (req, res) => {
   res.json({
     ...buildMatch({ ...row, streamCount: streams.length }),
     streams,
-    events: events.map(e => ({
-      id: e.id,
-      type: e.type,
-      minute: e.minute,
-      teamId: e.teamId,
-      playerName: e.playerName,
-      assistPlayerName: e.assistPlayerName,
-    })),
+    events,
   });
 });
 
 router.patch("/matches/:id", async (req, res) => {
   const { id } = UpdateMatchParams.parse({ id: Number(req.params.id) });
   const parsed = UpdateMatchBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
   const [match] = await db.update(matchesTable).set(parsed.data).where(eq(matchesTable.id, id)).returning();
-  if (!match) {
-    res.status(404).json({ error: "Match not found" });
-    return;
-  }
+  if (!match) { res.status(404).json({ error: "Match not found" }); return; }
 
   const homeTeam = alias(teamsTable, "homeTeam");
   const awayTeam = alias(teamsTable, "awayTeam");

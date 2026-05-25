@@ -9,26 +9,127 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface AdminLoginInput {
+  password: string;
+}
+
+export interface AdminAuthStatus {
+  authenticated: boolean;
+}
+
+export type TeamSport = typeof TeamSport[keyof typeof TeamSport];
+
+
+export const TeamSport = {
+  football: 'football',
+  futsal: 'futsal',
+} as const;
+
 export interface Team {
   id: number;
   name: string;
   shortName: string;
   logoUrl: string;
   country: string;
+  sport: TeamSport;
 }
+
+export type TeamInputSport = typeof TeamInputSport[keyof typeof TeamInputSport];
+
+
+export const TeamInputSport = {
+  football: 'football',
+  futsal: 'futsal',
+} as const;
 
 export interface TeamInput {
   name: string;
   shortName: string;
-  logoUrl: string;
+  logoUrl?: string;
   country: string;
+  sport: TeamInputSport;
 }
+
+export type TeamUpdateSport = typeof TeamUpdateSport[keyof typeof TeamUpdateSport];
+
+
+export const TeamUpdateSport = {
+  football: 'football',
+  futsal: 'futsal',
+} as const;
 
 export interface TeamUpdate {
   name?: string;
   shortName?: string;
   logoUrl?: string;
   country?: string;
+  sport?: TeamUpdateSport;
+}
+
+export type TournamentSport = typeof TournamentSport[keyof typeof TournamentSport];
+
+
+export const TournamentSport = {
+  football: 'football',
+  futsal: 'futsal',
+} as const;
+
+export interface Tournament {
+  id: number;
+  name: string;
+  sport: TournamentSport;
+  season: string;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  description?: string | null;
+  active: boolean;
+}
+
+export type TournamentInputSport = typeof TournamentInputSport[keyof typeof TournamentInputSport];
+
+
+export const TournamentInputSport = {
+  football: 'football',
+  futsal: 'futsal',
+} as const;
+
+export interface TournamentInput {
+  name: string;
+  sport: TournamentInputSport;
+  season: string;
+  logoUrl?: string;
+  description?: string;
+}
+
+export type TournamentUpdateSport = typeof TournamentUpdateSport[keyof typeof TournamentUpdateSport];
+
+
+export const TournamentUpdateSport = {
+  football: 'football',
+  futsal: 'futsal',
+} as const;
+
+export interface TournamentUpdate {
+  name?: string;
+  sport?: TournamentUpdateSport;
+  season?: string;
+  logoUrl?: string;
+  description?: string;
+  active?: boolean;
+}
+
+export interface StandingRow {
+  position: number;
+  team: Team;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  points: number;
 }
 
 export type MatchStatus = typeof MatchStatus[keyof typeof MatchStatus];
@@ -39,6 +140,14 @@ export const MatchStatus = {
   scheduled: 'scheduled',
   finished: 'finished',
   postponed: 'postponed',
+} as const;
+
+export type MatchSport = typeof MatchSport[keyof typeof MatchSport];
+
+
+export const MatchSport = {
+  football: 'football',
+  futsal: 'futsal',
 } as const;
 
 export interface Match {
@@ -56,6 +165,11 @@ export interface Match {
   kickoffAt: string;
   streamCount: number;
   featured?: boolean;
+  sport: MatchSport;
+  /** @nullable */
+  tournamentId?: number | null;
+  /** @nullable */
+  venue?: string | null;
 }
 
 export type MatchDetailStatus = typeof MatchDetailStatus[keyof typeof MatchDetailStatus];
@@ -66,6 +180,14 @@ export const MatchDetailStatus = {
   scheduled: 'scheduled',
   finished: 'finished',
   postponed: 'postponed',
+} as const;
+
+export type MatchDetailSport = typeof MatchDetailSport[keyof typeof MatchDetailSport];
+
+
+export const MatchDetailSport = {
+  football: 'football',
+  futsal: 'futsal',
 } as const;
 
 export type StreamQuality = typeof StreamQuality[keyof typeof StreamQuality];
@@ -95,18 +217,27 @@ export const MatchEventType = {
   goal: 'goal',
   yellow_card: 'yellow_card',
   red_card: 'red_card',
+  own_goal: 'own_goal',
+  penalty_awarded: 'penalty_awarded',
+  penalty_goal: 'penalty_goal',
+  penalty_missed: 'penalty_missed',
   substitution: 'substitution',
-  penalty: 'penalty',
+  mvp: 'mvp',
 } as const;
 
 export interface MatchEvent {
   id: number;
+  matchId: number;
   type: MatchEventType;
   minute: string;
   teamId: number;
   playerName: string;
   /** @nullable */
+  playerNumber?: string | null;
+  /** @nullable */
   assistPlayerName?: string | null;
+  /** @nullable */
+  description?: string | null;
 }
 
 export interface MatchDetail {
@@ -124,6 +255,11 @@ export interface MatchDetail {
   kickoffAt: string;
   streamCount?: number;
   featured?: boolean;
+  sport: MatchDetailSport;
+  /** @nullable */
+  tournamentId?: number | null;
+  /** @nullable */
+  venue?: string | null;
   streams: Stream[];
   events: MatchEvent[];
 }
@@ -138,6 +274,14 @@ export const MatchInputStatus = {
   postponed: 'postponed',
 } as const;
 
+export type MatchInputSport = typeof MatchInputSport[keyof typeof MatchInputSport];
+
+
+export const MatchInputSport = {
+  football: 'football',
+  futsal: 'futsal',
+} as const;
+
 export interface MatchInput {
   homeTeamId: number;
   awayTeamId: number;
@@ -149,6 +293,9 @@ export interface MatchInput {
   competitionLogo?: string;
   kickoffAt: string;
   featured?: boolean;
+  sport: MatchInputSport;
+  tournamentId?: number;
+  venue?: string;
 }
 
 export type MatchUpdateStatus = typeof MatchUpdateStatus[keyof typeof MatchUpdateStatus];
@@ -167,6 +314,57 @@ export interface MatchUpdate {
   status?: MatchUpdateStatus;
   minute?: string;
   featured?: boolean;
+  venue?: string;
+}
+
+export type MatchEventInputType = typeof MatchEventInputType[keyof typeof MatchEventInputType];
+
+
+export const MatchEventInputType = {
+  goal: 'goal',
+  yellow_card: 'yellow_card',
+  red_card: 'red_card',
+  own_goal: 'own_goal',
+  penalty_awarded: 'penalty_awarded',
+  penalty_goal: 'penalty_goal',
+  penalty_missed: 'penalty_missed',
+  substitution: 'substitution',
+  mvp: 'mvp',
+} as const;
+
+export interface MatchEventInput {
+  type: MatchEventInputType;
+  minute: string;
+  teamId: number;
+  playerName: string;
+  playerNumber?: string;
+  assistPlayerName?: string;
+  description?: string;
+}
+
+export interface LineupPlayer {
+  id: number;
+  matchId: number;
+  teamId: number;
+  playerNumber: string;
+  playerName: string;
+  /** @nullable */
+  position?: string | null;
+  isStarting: boolean;
+}
+
+export interface LineupPlayerInput {
+  teamId: number;
+  playerNumber: string;
+  playerName: string;
+  position?: string;
+  isStarting?: boolean;
+}
+
+export interface MatchLineup {
+  matchId: number;
+  home: LineupPlayer[];
+  away: LineupPlayer[];
 }
 
 export type StreamInputQuality = typeof StreamInputQuality[keyof typeof StreamInputQuality];
@@ -221,6 +419,7 @@ export interface StatsSummary {
   totalTeams: number;
   totalHighlights: number;
   totalStreams: number;
+  totalTournaments?: number;
 }
 
 export interface CompetitionStat {
@@ -231,9 +430,37 @@ export interface CompetitionStat {
   totalCount: number;
 }
 
+export type ListTeamsParams = {
+sport?: ListTeamsSport;
+};
+
+export type ListTeamsSport = typeof ListTeamsSport[keyof typeof ListTeamsSport];
+
+
+export const ListTeamsSport = {
+  football: 'football',
+  futsal: 'futsal',
+  all: 'all',
+} as const;
+
+export type ListTournamentsParams = {
+sport?: ListTournamentsSport;
+};
+
+export type ListTournamentsSport = typeof ListTournamentsSport[keyof typeof ListTournamentsSport];
+
+
+export const ListTournamentsSport = {
+  football: 'football',
+  futsal: 'futsal',
+  all: 'all',
+} as const;
+
 export type ListMatchesParams = {
 status?: ListMatchesStatus;
 competition?: string;
+sport?: ListMatchesSport;
+tournamentId?: number;
 limit?: number;
 };
 
@@ -244,6 +471,28 @@ export const ListMatchesStatus = {
   live: 'live',
   scheduled: 'scheduled',
   finished: 'finished',
+  all: 'all',
+} as const;
+
+export type ListMatchesSport = typeof ListMatchesSport[keyof typeof ListMatchesSport];
+
+
+export const ListMatchesSport = {
+  football: 'football',
+  futsal: 'futsal',
+  all: 'all',
+} as const;
+
+export type ListLiveMatchesParams = {
+sport?: ListLiveMatchesSport;
+};
+
+export type ListLiveMatchesSport = typeof ListLiveMatchesSport[keyof typeof ListLiveMatchesSport];
+
+
+export const ListLiveMatchesSport = {
+  football: 'football',
+  futsal: 'futsal',
   all: 'all',
 } as const;
 

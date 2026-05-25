@@ -5,6 +5,7 @@
  * FootballLive API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { TeamSport } from './teamSport';
 
 export interface Team {
   id: number;
@@ -12,4 +13,5 @@ export interface Team {
   shortName: string;
   logoUrl: string;
   country: string;
+  sport: TeamSport;
 }

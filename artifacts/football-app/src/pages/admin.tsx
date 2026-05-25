@@ -1,58 +1,177 @@
-import { useGetStatsSummary } from "@workspace/api-client-react";
+import { useAdminMe, useAdminLogin, useAdminLogout, getAdminMeQueryKey, useGetStatsSummary } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Activity, Calendar, CheckCircle2, Trophy, Users, Video } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { TeamsTab } from "@/components/admin/teams-tab";
+import { TournamentsTab } from "@/components/admin/tournaments-tab";
+import { MatchesTab } from "@/components/admin/matches-tab";
+import { EventsTab } from "@/components/admin/events-tab";
+import { LineupTab } from "@/components/admin/lineup-tab";
+import { StreamsTab } from "@/components/admin/streams-tab";
+import { Activity, Calendar, CheckCircle2, Users, Video, Trophy, LayoutGrid, LogOut, Lock } from "lucide-react";
 
-export default function AdminDashboard() {
+const TABS = ["Overview", "Teams", "Tournaments", "Matches", "Live Events", "Lineup", "Streams"] as const;
+type Tab = typeof TABS[number];
+
+function LoginPage() {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
+  const login = useAdminLogin();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    login.mutate({ data: { password } }, {
+      onSuccess: (result) => {
+        if (result.authenticated) {
+          queryClient.invalidateQueries({ queryKey: getAdminMeQueryKey() });
+        } else {
+          setError("Wrong password. Try again.");
+        }
+      },
+      onError: () => setError("Wrong password. Try again."),
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <div className="w-14 h-14 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-7 h-7 text-primary" />
+          </div>
+          <h1 className="text-2xl font-black text-foreground">Admin Access</h1>
+          <p className="text-sm text-muted-foreground mt-1">FootballLive control panel</p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Enter admin password"
+              data-testid="input-admin-password"
+              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary text-sm"
+            />
+          </div>
+          {error && <p className="text-xs text-red-400 font-medium">{error}</p>}
+          <button
+            type="submit"
+            disabled={login.isPending}
+            data-testid="button-admin-login"
+            className="w-full bg-primary text-white font-bold py-3 rounded-xl text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
+          >
+            {login.isPending ? "Signing in..." : "Sign In"}
+          </button>
+        </form>
+        <p className="text-center text-xs text-muted-foreground mt-6">Default password: <code className="text-primary">admin2024</code></p>
+      </div>
+    </div>
+  );
+}
+
+function OverviewTab() {
   const { data: stats, isLoading } = useGetStatsSummary();
-
-  const statCards = [
-    { label: "Live Matches", value: stats?.liveMatchCount, icon: Activity, color: "text-red-400", bg: "bg-red-500/10" },
+  const cards = [
+    { label: "Live", value: stats?.liveMatchCount, icon: Activity, color: "text-red-400", bg: "bg-red-500/10" },
     { label: "Scheduled", value: stats?.scheduledMatchCount, icon: Calendar, color: "text-blue-400", bg: "bg-blue-500/10" },
     { label: "Finished", value: stats?.finishedMatchCount, icon: CheckCircle2, color: "text-muted-foreground", bg: "bg-muted/50" },
     { label: "Teams", value: stats?.totalTeams, icon: Users, color: "text-primary", bg: "bg-primary/10" },
     { label: "Highlights", value: stats?.totalHighlights, icon: Video, color: "text-purple-400", bg: "bg-purple-500/10" },
     { label: "Streams", value: stats?.totalStreams, icon: Trophy, color: "text-yellow-400", bg: "bg-yellow-500/10" },
+    { label: "Tournaments", value: stats?.totalTournaments, icon: LayoutGrid, color: "text-green-400", bg: "bg-green-500/10" },
   ];
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {isLoading ? Array.from({ length: 7 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />) :
+        cards.map((c, i) => {
+          const Icon = c.icon;
+          return (
+            <div key={i} className="bg-card rounded-xl border border-border p-4 flex flex-col gap-3">
+              <div className={`w-9 h-9 rounded-xl ${c.bg} flex items-center justify-center`}>
+                <Icon className={`w-5 h-5 ${c.color}`} />
+              </div>
+              <div>
+                <div className="text-2xl font-black text-foreground">{c.value ?? 0}</div>
+                <div className="text-xs text-muted-foreground font-medium">{c.label}</div>
+              </div>
+            </div>
+          );
+        })}
+    </div>
+  );
+}
+
+export default function AdminDashboard() {
+  const { data: auth, isLoading } = useAdminMe();
+  const logout = useAdminLogout();
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<Tab>("Overview");
+
+  const handleLogout = () => {
+    logout.mutate(undefined, {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: getAdminMeQueryKey() }),
+    });
+  };
+
+  if (isLoading) return (
+    <div className="px-4 pt-4 space-y-4">
+      <Skeleton className="h-10 w-full rounded-xl" />
+      <div className="grid grid-cols-2 gap-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>
+    </div>
+  );
+
+  if (!auth?.authenticated) return <LoginPage />;
+
+  const tabContent: Record<Tab, React.ReactNode> = {
+    "Overview": <OverviewTab />,
+    "Teams": <TeamsTab />,
+    "Tournaments": <TournamentsTab />,
+    "Matches": <MatchesTab />,
+    "Live Events": <EventsTab />,
+    "Lineup": <LineupTab />,
+    "Streams": <StreamsTab />,
+  };
 
   return (
-    <div className="pb-6">
-      <div className="px-4 pt-4 pb-3">
-        <h1 className="text-xl font-black text-foreground">Dashboard</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">Platform overview</p>
+    <div className="pb-24">
+      {/* Admin header */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+        <div>
+          <h1 className="text-xl font-black text-foreground">Admin Dashboard</h1>
+          <p className="text-xs text-muted-foreground">Manage all platform content</p>
+        </div>
+        <button onClick={handleLogout} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted rounded-xl px-3 py-2 transition-colors">
+          <LogOut className="w-3.5 h-3.5" />
+          Logout
+        </button>
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 gap-3 px-4 mb-6">
-        {isLoading
-          ? Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full rounded-xl" />
-            ))
-          : statCards.map((stat, i) => {
-              const Icon = stat.icon;
-              return (
-                <div key={i} className="bg-card rounded-xl border border-border p-4 flex flex-col gap-3">
-                  <div className={`w-9 h-9 rounded-xl ${stat.bg} flex items-center justify-center`}>
-                    <Icon className={`w-5 h-5 ${stat.color}`} />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-black text-foreground">{stat.value ?? 0}</div>
-                    <div className="text-xs text-muted-foreground font-medium mt-0.5">{stat.label}</div>
-                  </div>
-                </div>
-              );
-            })}
-      </div>
-
-      {/* Manage sections placeholder */}
-      <div className="px-4 space-y-3">
-        {["Matches", "Teams", "Streams", "Highlights"].map((section) => (
-          <div key={section} className="bg-card rounded-xl border border-border px-4 py-3.5 flex items-center justify-between">
-            <span className="text-sm font-semibold text-foreground">Manage {section}</span>
-            <span className="text-xs bg-primary/15 text-primary border border-primary/25 px-2.5 py-1 rounded-full font-semibold">
-              Coming Soon
-            </span>
-          </div>
+      {/* Tab bar */}
+      <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar px-4 pb-3">
+        {TABS.map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            data-testid={`admin-tab-${tab.toLowerCase().replace(/\s+/g, "-")}`}
+            className={cn(
+              "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold border transition-all",
+              activeTab === tab
+                ? "bg-primary text-white border-primary"
+                : "bg-card text-muted-foreground border-border hover:border-primary/40"
+            )}
+          >
+            {tab}
+          </button>
         ))}
+      </div>
+
+      {/* Tab content */}
+      <div className="px-4">
+        {tabContent[activeTab]}
       </div>
     </div>
   );

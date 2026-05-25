@@ -5,6 +5,7 @@
  * FootballLive API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MatchDetailSport } from './matchDetailSport';
 import type { MatchDetailStatus } from './matchDetailStatus';
 import type { MatchEvent } from './matchEvent';
 import type { Stream } from './stream';
@@ -25,6 +26,11 @@ export interface MatchDetail {
   kickoffAt: Date;
   streamCount?: number;
   featured?: boolean;
+  sport: MatchDetailSport;
+  /** @nullable */
+  tournamentId?: number | null;
+  /** @nullable */
+  venue?: string | null;
   streams: Stream[];
   events: MatchEvent[];
 }

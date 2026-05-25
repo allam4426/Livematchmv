@@ -9,10 +9,15 @@ import type { MatchEventType } from './matchEventType';
 
 export interface MatchEvent {
   id: number;
+  matchId: number;
   type: MatchEventType;
   minute: string;
   teamId: number;
   playerName: string;
   /** @nullable */
+  playerNumber?: string | null;
+  /** @nullable */
   assistPlayerName?: string | null;
+  /** @nullable */
+  description?: string | null;
 }

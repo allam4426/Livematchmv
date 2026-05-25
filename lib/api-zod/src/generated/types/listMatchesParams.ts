@@ -5,10 +5,13 @@
  * FootballLive API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ListMatchesSport } from './listMatchesSport';
 import type { ListMatchesStatus } from './listMatchesStatus';
 
 export type ListMatchesParams = {
 status?: ListMatchesStatus;
 competition?: string;
+sport?: ListMatchesSport;
+tournamentId?: number;
 limit?: number;
 };
