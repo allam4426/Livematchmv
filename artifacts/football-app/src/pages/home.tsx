@@ -1,97 +1,191 @@
-import { useListLiveMatches, useListMatches } from "@workspace/api-client-react";
+import { useListLiveMatches, useListMatches, useListCompetitions } from "@workspace/api-client-react";
 import { MatchCard } from "@/components/match-card";
+import { MatchRow } from "@/components/match-row";
 import { Skeleton } from "@/components/ui/skeleton";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
+import { addDays, subDays, format, isToday } from "date-fns";
+import { cn } from "@/lib/utils";
 import { Trophy } from "lucide-react";
 
-export default function Home() {
-  const { data: liveMatches, isLoading: liveLoading } = useListLiveMatches();
-  const [statusFilter, setStatusFilter] = useState<"all" | "scheduled" | "finished">("all");
-  const { data: matches, isLoading: matchesLoading } = useListMatches({ status: statusFilter });
+const DAYS = [-2, -1, 0, 1, 2];
+const SPORTS = ["All", "Football", "Futsal"];
 
-  const featuredLive = liveMatches?.find(m => m.featured) || liveMatches?.[0];
+export default function Home() {
+  const [selectedDayOffset, setSelectedDayOffset] = useState(0);
+  const [selectedSport, setSelectedSport] = useState("All");
+
+  const { data: liveMatches, isLoading: liveLoading } = useListLiveMatches();
+  const { data: allMatches, isLoading: matchesLoading } = useListMatches({ limit: 50 });
+  const { data: competitions } = useListCompetitions();
+
+  const featuredLive = liveMatches?.find((m) => m.featured) || liveMatches?.[0];
+
+  // Group matches by competition
+  const groupedMatches: Record<string, typeof allMatches> = {};
+  if (allMatches) {
+    for (const m of allMatches) {
+      if (!groupedMatches[m.competition]) groupedMatches[m.competition] = [];
+      groupedMatches[m.competition]!.push(m);
+    }
+  }
+
+  const today = new Date();
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-12">
-      {/* Featured Match Hero */}
-      <section>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Featured Match</h2>
+    <div className="pb-6">
+      {/* Featured Live Match */}
+      <div className="px-4 pt-4 pb-4">
         {liveLoading ? (
-          <Skeleton className="h-64 w-full rounded-2xl" />
+          <Skeleton className="h-52 w-full rounded-2xl" />
         ) : featuredLive ? (
-          <MatchCard match={featuredLive} featured />
+          <MatchCard match={featuredLive} />
         ) : (
-          <div className="h-48 rounded-2xl bg-card border border-border flex flex-col items-center justify-center text-muted-foreground p-6 text-center">
-            <Trophy className="h-8 w-8 mb-2 opacity-50" />
-            <p>No featured live matches right now.</p>
+          <div className="h-40 rounded-2xl bg-card border border-border flex flex-col items-center justify-center text-muted-foreground gap-2">
+            <Trophy className="w-7 h-7 opacity-30" />
+            <p className="text-sm">No live matches right now</p>
           </div>
         )}
-      </section>
+      </div>
 
-      {/* Horizontal Scroll Live Matches */}
-      {liveMatches && liveMatches.length > 0 && (
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Live Now</h2>
-            <Button variant="link" size="sm" className="text-primary h-auto p-0" asChild>
-              <a href="/live">View All</a>
-            </Button>
+      {/* Date Selector */}
+      <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar px-4 pb-3">
+        {DAYS.map((offset) => {
+          const date = offset < 0 ? subDays(today, Math.abs(offset)) : addDays(today, offset);
+          const isSelected = offset === selectedDayOffset;
+          const todayFlag = isToday(date);
+          return (
+            <button
+              key={offset}
+              onClick={() => setSelectedDayOffset(offset)}
+              data-testid={`date-tab-${offset}`}
+              className={cn(
+                "flex flex-col items-center justify-center rounded-xl px-4 py-2 min-w-[68px] shrink-0 transition-all font-medium",
+                isSelected
+                  ? "bg-primary text-white"
+                  : "bg-card text-muted-foreground hover:bg-accent"
+              )}
+            >
+              <span className={cn("text-[10px] uppercase tracking-wide", isSelected ? "text-white/80" : "text-muted-foreground")}>
+                {todayFlag ? "TODAY" : format(date, "EEE").toUpperCase()}
+              </span>
+              <span className={cn("text-sm font-bold mt-0.5", isSelected ? "text-white" : "text-foreground")}>
+                {format(date, "d MMM")}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Sport Filter Pills */}
+      <div className="flex items-center gap-2 px-4 pb-4 overflow-x-auto hide-scrollbar">
+        {SPORTS.map((sport) => {
+          const isSelected = selectedSport === sport;
+          return (
+            <button
+              key={sport}
+              onClick={() => setSelectedSport(sport)}
+              data-testid={`sport-filter-${sport.toLowerCase()}`}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold shrink-0 transition-all border",
+                isSelected
+                  ? "bg-primary text-white border-primary"
+                  : "bg-card text-muted-foreground border-border hover:border-primary/40"
+              )}
+            >
+              {sport === "Football" && <span className="text-base leading-none">⚽</span>}
+              {sport === "Futsal" && <span className="text-base leading-none">🥅</span>}
+              {sport}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Live horizontal scroll (if more than 1 live match) */}
+      {liveMatches && liveMatches.length > 1 && (
+        <div className="mb-2">
+          <div className="flex items-center justify-between px-4 mb-2">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Live Now</span>
+            <a href="/live" className="text-xs font-semibold text-primary">View all</a>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="flex gap-3 overflow-x-auto hide-scrollbar px-4 pb-2 snap-x snap-mandatory">
             {liveMatches.map((match) => (
               <div key={match.id} className="min-w-[280px] snap-center shrink-0">
                 <MatchCard match={match} />
               </div>
             ))}
           </div>
-        </section>
+        </div>
       )}
 
-      {/* Matches List */}
-      <section>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Today's Matches</h2>
-          <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)} className="w-full sm:w-auto">
-            <TabsList className="grid w-full grid-cols-3 bg-muted/50 border border-border">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="scheduled">Upcoming</TabsTrigger>
-              <TabsTrigger value="finished">Finished</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
+      {/* Competition Grouped Matches */}
+      <div className="space-y-3 px-0">
+        {matchesLoading ? (
+          <div className="space-y-2 px-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="space-y-1">
+                <Skeleton className="h-8 w-full rounded-lg" />
+                <Skeleton className="h-14 w-full rounded" />
+                <Skeleton className="h-14 w-full rounded" />
+              </div>
+            ))}
+          </div>
+        ) : Object.keys(groupedMatches).length > 0 ? (
+          Object.entries(groupedMatches).map(([competition, matches]) => {
+            if (!matches) return null;
+            const liveCount = matches.filter((m) => m.status === "live").length;
+            const upcomingCount = matches.filter((m) => m.status === "scheduled").length;
+            const statusLabel = liveCount > 0 ? "Live" : upcomingCount > 0 ? "Upcoming" : "Finished";
+            const statusCount = liveCount > 0 ? liveCount : upcomingCount > 0 ? upcomingCount : matches.length;
+            const compStat = competitions?.find((c) => c.name === competition);
 
-        <div className="space-y-3">
-          {matchesLoading ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-32 w-full rounded-xl" />
-            ))
-          ) : matches && matches.length > 0 ? (
-            <motion.div 
-              initial="hidden"
-              animate="show"
-              variants={{
-                hidden: { opacity: 0 },
-                show: {
-                  opacity: 1,
-                  transition: { staggerChildren: 0.1 }
-                }
-              }}
-              className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-            >
-              {matches.map((match) => (
-                <MatchCard key={match.id} match={match} />
-              ))}
-            </motion.div>
-          ) : (
-            <div className="py-12 text-center text-muted-foreground bg-card/50 rounded-xl border border-border border-dashed">
-              No matches found for the selected filter.
-            </div>
-          )}
-        </div>
-      </section>
+            return (
+              <div key={competition} className="bg-card rounded-xl overflow-hidden mx-4 border border-border">
+                {/* Competition Header */}
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                      {compStat?.logoUrl ? (
+                        <img src={compStat.logoUrl} alt={competition} className="w-5 h-5 object-contain" />
+                      ) : (
+                        <span className="text-[9px] font-black text-muted-foreground">{competition.slice(0, 2).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <span className="text-sm font-bold text-foreground">{competition}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn(
+                      "text-[11px] font-semibold px-2 py-0.5 rounded-full",
+                      liveCount > 0
+                        ? "bg-red-500/15 text-red-400 border border-red-500/25"
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {statusLabel}
+                    </span>
+                    <span className={cn(
+                      "text-[11px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center",
+                      liveCount > 0 ? "bg-red-500 text-white" : "bg-primary text-white"
+                    )}>
+                      {statusCount}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Match Rows */}
+                <div className="divide-y divide-border/50">
+                  {matches.map((match, i) => (
+                    <MatchRow key={match.id} match={match} index={i} />
+                  ))}
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="py-16 text-center text-muted-foreground px-4">
+            <Trophy className="w-10 h-10 mx-auto mb-3 opacity-20" />
+            <p className="text-sm">No matches scheduled for this day</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
