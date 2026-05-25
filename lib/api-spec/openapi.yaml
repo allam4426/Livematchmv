@@ -3,13 +3,24 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: FootballLive API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: matches
+    description: Match operations
+  - name: teams
+    description: Team operations
+  - name: streams
+    description: Stream operations
+  - name: highlights
+    description: Highlight operations
+  - name: stats
+    description: Stats and summary operations
+
 paths:
   /healthz:
     get:
@@ -24,6 +35,367 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /matches:
+    get:
+      operationId: listMatches
+      tags: [matches]
+      summary: List all matches
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [live, scheduled, finished, all]
+        - name: competition
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: List of matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Match"
+    post:
+      operationId: createMatch
+      tags: [matches]
+      summary: Create a new match (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+
+  /matches/live:
+    get:
+      operationId: listLiveMatches
+      tags: [matches]
+      summary: List currently live matches
+      responses:
+        "200":
+          description: Live matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Match"
+
+  /matches/{id}:
+    get:
+      operationId: getMatch
+      tags: [matches]
+      summary: Get a single match by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Match found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateMatch
+      tags: [matches]
+      summary: Update a match (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+    delete:
+      operationId: deleteMatch
+      tags: [matches]
+      summary: Delete a match (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /teams:
+    get:
+      operationId: listTeams
+      tags: [teams]
+      summary: List all teams
+      responses:
+        "200":
+          description: Teams list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+    post:
+      operationId: createTeam
+      tags: [teams]
+      summary: Create a team (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+
+  /teams/{id}:
+    get:
+      operationId: getTeam
+      tags: [teams]
+      summary: Get a team
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Team found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+    patch:
+      operationId: updateTeam
+      tags: [teams]
+      summary: Update a team
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+    delete:
+      operationId: deleteTeam
+      tags: [teams]
+      summary: Delete a team (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /streams:
+    get:
+      operationId: listStreams
+      tags: [streams]
+      summary: List available streams
+      parameters:
+        - name: matchId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Streams list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Stream"
+    post:
+      operationId: createStream
+      tags: [streams]
+      summary: Create a stream link (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StreamInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stream"
+
+  /streams/{id}:
+    delete:
+      operationId: deleteStream
+      tags: [streams]
+      summary: Delete a stream (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /highlights:
+    get:
+      operationId: listHighlights
+      tags: [highlights]
+      summary: List all highlights
+      parameters:
+        - name: competition
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Highlights list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Highlight"
+    post:
+      operationId: createHighlight
+      tags: [highlights]
+      summary: Create a highlight (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HighlightInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Highlight"
+
+  /highlights/{id}:
+    get:
+      operationId: getHighlight
+      tags: [highlights]
+      summary: Get a single highlight
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Highlight found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Highlight"
+    delete:
+      operationId: deleteHighlight
+      tags: [highlights]
+      summary: Delete a highlight (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /stats/summary:
+    get:
+      operationId: getStatsSummary
+      tags: [stats]
+      summary: Get dashboard stats summary
+      responses:
+        "200":
+          description: Stats summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsSummary"
+
+  /stats/competitions:
+    get:
+      operationId: listCompetitions
+      tags: [stats]
+      summary: List active competitions with match counts
+      responses:
+        "200":
+          description: Competitions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CompetitionStat"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +406,293 @@ components:
       required:
         - status
 
+    Team:
+      type: object
+      required: [id, name, shortName, logoUrl, country]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        shortName:
+          type: string
+        logoUrl:
+          type: string
+        country:
+          type: string
+
+    TeamInput:
+      type: object
+      required: [name, shortName, logoUrl, country]
+      properties:
+        name:
+          type: string
+        shortName:
+          type: string
+        logoUrl:
+          type: string
+        country:
+          type: string
+
+    TeamUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        shortName:
+          type: string
+        logoUrl:
+          type: string
+        country:
+          type: string
+
+    Match:
+      type: object
+      required: [id, homeTeam, awayTeam, homeScore, awayScore, status, minute, competition, kickoffAt, streamCount]
+      properties:
+        id:
+          type: integer
+        homeTeam:
+          $ref: "#/components/schemas/Team"
+        awayTeam:
+          $ref: "#/components/schemas/Team"
+        homeScore:
+          type: integer
+        awayScore:
+          type: integer
+        status:
+          type: string
+          enum: [live, scheduled, finished, postponed]
+        minute:
+          type: ["string", "null"]
+        competition:
+          type: string
+        competitionLogo:
+          type: ["string", "null"]
+        kickoffAt:
+          type: string
+          format: date-time
+        streamCount:
+          type: integer
+        featured:
+          type: boolean
+
+    MatchDetail:
+      type: object
+      required: [id, homeTeam, awayTeam, homeScore, awayScore, status, minute, competition, kickoffAt, streams, events]
+      properties:
+        id:
+          type: integer
+        homeTeam:
+          $ref: "#/components/schemas/Team"
+        awayTeam:
+          $ref: "#/components/schemas/Team"
+        homeScore:
+          type: integer
+        awayScore:
+          type: integer
+        status:
+          type: string
+          enum: [live, scheduled, finished, postponed]
+        minute:
+          type: ["string", "null"]
+        competition:
+          type: string
+        competitionLogo:
+          type: ["string", "null"]
+        kickoffAt:
+          type: string
+          format: date-time
+        streamCount:
+          type: integer
+        featured:
+          type: boolean
+        streams:
+          type: array
+          items:
+            $ref: "#/components/schemas/Stream"
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchEvent"
+
+    MatchInput:
+      type: object
+      required: [homeTeamId, awayTeamId, competition, kickoffAt]
+      properties:
+        homeTeamId:
+          type: integer
+        awayTeamId:
+          type: integer
+        homeScore:
+          type: integer
+        awayScore:
+          type: integer
+        status:
+          type: string
+          enum: [live, scheduled, finished, postponed]
+        minute:
+          type: string
+        competition:
+          type: string
+        competitionLogo:
+          type: string
+        kickoffAt:
+          type: string
+          format: date-time
+        featured:
+          type: boolean
+
+    MatchUpdate:
+      type: object
+      properties:
+        homeScore:
+          type: integer
+        awayScore:
+          type: integer
+        status:
+          type: string
+          enum: [live, scheduled, finished, postponed]
+        minute:
+          type: string
+        featured:
+          type: boolean
+
+    MatchEvent:
+      type: object
+      required: [id, type, minute, teamId, playerName]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [goal, yellow_card, red_card, substitution, penalty]
+        minute:
+          type: string
+        teamId:
+          type: integer
+        playerName:
+          type: string
+        assistPlayerName:
+          type: ["string", "null"]
+
+    Stream:
+      type: object
+      required: [id, matchId, label, url, quality, language]
+      properties:
+        id:
+          type: integer
+        matchId:
+          type: integer
+        label:
+          type: string
+        url:
+          type: string
+        quality:
+          type: string
+          enum: [HD, SD, FHD]
+        language:
+          type: string
+        embedCode:
+          type: ["string", "null"]
+
+    StreamInput:
+      type: object
+      required: [matchId, label, url, quality, language]
+      properties:
+        matchId:
+          type: integer
+        label:
+          type: string
+        url:
+          type: string
+        quality:
+          type: string
+          enum: [HD, SD, FHD]
+        language:
+          type: string
+        embedCode:
+          type: string
+
+    Highlight:
+      type: object
+      required: [id, title, competition, thumbnailUrl, videoUrl, duration, publishedAt, homeTeam, awayTeam, homeScore, awayScore]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        competition:
+          type: string
+        thumbnailUrl:
+          type: string
+        videoUrl:
+          type: string
+        duration:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+        homeTeam:
+          $ref: "#/components/schemas/Team"
+        awayTeam:
+          $ref: "#/components/schemas/Team"
+        homeScore:
+          type: integer
+        awayScore:
+          type: integer
+        views:
+          type: integer
+
+    HighlightInput:
+      type: object
+      required: [title, competition, thumbnailUrl, videoUrl, duration, homeTeamId, awayTeamId, homeScore, awayScore]
+      properties:
+        title:
+          type: string
+        competition:
+          type: string
+        thumbnailUrl:
+          type: string
+        videoUrl:
+          type: string
+        duration:
+          type: string
+        homeTeamId:
+          type: integer
+        awayTeamId:
+          type: integer
+        homeScore:
+          type: integer
+        awayScore:
+          type: integer
+
+    StatsSummary:
+      type: object
+      required: [liveMatchCount, scheduledMatchCount, finishedMatchCount, totalTeams, totalHighlights, totalStreams]
+      properties:
+        liveMatchCount:
+          type: integer
+        scheduledMatchCount:
+          type: integer
+        finishedMatchCount:
+          type: integer
+        totalTeams:
+          type: integer
+        totalHighlights:
+          type: integer
+        totalStreams:
+          type: integer
+
+    CompetitionStat:
+      type: object
+      required: [name, liveCount, totalCount]
+      properties:
+        name:
+          type: string
+        logoUrl:
+          type: ["string", "null"]
+        liveCount:
+          type: integer
+        totalCount:
+          type: integer
