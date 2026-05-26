@@ -9,7 +9,7 @@ import { MatchesTab } from "@/components/admin/matches-tab";
 import { EventsTab } from "@/components/admin/events-tab";
 import { LineupTab } from "@/components/admin/lineup-tab";
 import { StreamsTab } from "@/components/admin/streams-tab";
-import { Activity, Calendar, CheckCircle2, Users, Video, Trophy, LayoutGrid, LogOut, Lock } from "lucide-react";
+import { Activity, Calendar, CheckCircle2, Users, Trophy, LayoutGrid, LogOut, Lock } from "lucide-react";
 
 const TABS = ["Overview", "Teams", "Tournaments", "Matches", "Live Events", "Lineup", "Streams"] as const;
 type Tab = typeof TABS[number];
@@ -80,7 +80,6 @@ function OverviewTab() {
     { label: "Scheduled", value: stats?.scheduledMatchCount, icon: Calendar, color: "text-blue-400", bg: "bg-blue-500/10" },
     { label: "Finished", value: stats?.finishedMatchCount, icon: CheckCircle2, color: "text-muted-foreground", bg: "bg-muted/50" },
     { label: "Teams", value: stats?.totalTeams, icon: Users, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Highlights", value: stats?.totalHighlights, icon: Video, color: "text-purple-400", bg: "bg-purple-500/10" },
     { label: "Streams", value: stats?.totalStreams, icon: Trophy, color: "text-yellow-400", bg: "bg-yellow-500/10" },
     { label: "Tournaments", value: stats?.totalTournaments, icon: LayoutGrid, color: "text-green-400", bg: "bg-green-500/10" },
   ];

@@ -3,7 +3,7 @@ import { MatchCard } from "@/components/match-card";
 import { MatchRow } from "@/components/match-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
-import { addDays, subDays, format, isToday } from "date-fns";
+import { addDays, subDays, format, isToday, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Trophy } from "lucide-react";
 
@@ -15,21 +15,34 @@ export default function Home() {
   const [selectedSport, setSelectedSport] = useState("All");
 
   const { data: liveMatches, isLoading: liveLoading } = useListLiveMatches();
-  const { data: allMatches, isLoading: matchesLoading } = useListMatches({ limit: 50 });
+  const { data: allMatches, isLoading: matchesLoading } = useListMatches({ limit: 200 });
   const { data: competitions } = useListCompetitions();
+
+  const today = new Date();
+  const selectedDate = selectedDayOffset < 0
+    ? subDays(today, Math.abs(selectedDayOffset))
+    : addDays(today, selectedDayOffset);
 
   const featuredLive = liveMatches?.find((m) => m.featured) || liveMatches?.[0];
 
-  // Group matches by competition
-  const groupedMatches: Record<string, typeof allMatches> = {};
-  if (allMatches) {
-    for (const m of allMatches) {
+  // Filter by selected date AND sport
+  const filteredMatches = allMatches?.filter((m) => {
+    const matchDate = new Date(m.kickoffAt);
+    const dateMatch = isSameDay(matchDate, selectedDate);
+    const sportMatch =
+      selectedSport === "All" ||
+      m.sport?.toLowerCase() === selectedSport.toLowerCase();
+    return dateMatch && sportMatch;
+  });
+
+  // Group by competition
+  const groupedMatches: Record<string, typeof filteredMatches> = {};
+  if (filteredMatches) {
+    for (const m of filteredMatches) {
       if (!groupedMatches[m.competition]) groupedMatches[m.competition] = [];
       groupedMatches[m.competition]!.push(m);
     }
   }
-
-  const today = new Date();
 
   return (
     <div className="pb-6">
@@ -100,7 +113,7 @@ export default function Home() {
         })}
       </div>
 
-      {/* Live horizontal scroll (if more than 1 live match) */}
+      {/* Live horizontal scroll */}
       {liveMatches && liveMatches.length > 1 && (
         <div className="mb-2">
           <div className="flex items-center justify-between px-4 mb-2">
@@ -140,7 +153,6 @@ export default function Home() {
 
             return (
               <div key={competition} className="bg-card rounded-xl overflow-hidden mx-4 border border-border">
-                {/* Competition Header */}
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
                   <div className="flex items-center gap-2.5">
                     <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
@@ -170,7 +182,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Match Rows */}
                 <div className="divide-y divide-border/50">
                   {matches.map((match, i) => (
                     <MatchRow key={match.id} match={match} index={i} />
@@ -182,7 +193,8 @@ export default function Home() {
         ) : (
           <div className="py-16 text-center text-muted-foreground px-4">
             <Trophy className="w-10 h-10 mx-auto mb-3 opacity-20" />
-            <p className="text-sm">No matches scheduled for this day</p>
+            <p className="text-sm font-medium">No matches on {format(selectedDate, "EEEE, d MMMM")}</p>
+            <p className="text-xs mt-1 opacity-60">Try another date or check back later</p>
           </div>
         )}
       </div>

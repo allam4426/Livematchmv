@@ -4,7 +4,6 @@ import { Switch, Route } from "wouter";
 import Home from "./pages/home";
 import LiveMatches from "./pages/live";
 import MatchDetails from "./pages/match";
-import Highlights from "./pages/highlights";
 import AdminDashboard from "./pages/admin";
 import NotFound from "./pages/not-found";
 import StreamPage from "./pages/stream";
@@ -20,7 +19,6 @@ export default function App() {
           <Route path="/live" component={LiveMatches} />
           <Route path="/match/:id" component={MatchDetails} />
           <Route path="/stream/:id" component={StreamPage} />
-          <Route path="/highlights" component={Highlights} />
           <Route path="/admin" component={AdminDashboard} />
           <Route component={NotFound} />
         </Switch>

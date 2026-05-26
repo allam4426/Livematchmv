@@ -61,10 +61,10 @@
   --popover-foreground: 210 40% 95%;
   --popover-border: 214 35% 18%;
 
-  /* Orange accent — MatchFoari brand color */
-  --primary: 25 100% 50%;
+  /* Primary red — LiveMatch brand color */
+  --primary: 0 80% 50%;
   --primary-foreground: 0 0% 100%;
-  --primary-border: hsl(25 100% 50% / 0.3);
+  --primary-border: hsl(0 80% 50% / 0.3);
 
   --secondary: 214 35% 16%;
   --secondary-foreground: 210 40% 80%;

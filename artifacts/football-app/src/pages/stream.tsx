@@ -6,6 +6,70 @@ import { useState } from "react";
 import { TeamLogo } from "@/components/team-logo";
 import { cn } from "@/lib/utils";
 
+function isVideoUrl(url: string) {
+  return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
+}
+
+function isM3u8Url(url: string) {
+  return /\.m3u8(\?.*)?$/i.test(url);
+}
+
+function StreamPlayer({ stream }: { stream: { url: string; embedCode?: string | null; label: string } }) {
+  if (stream.embedCode) {
+    return (
+      <div
+        className="w-full h-full"
+        dangerouslySetInnerHTML={{ __html: stream.embedCode }}
+        style={{ lineHeight: 0 }}
+      />
+    );
+  }
+
+  if (isVideoUrl(stream.url)) {
+    return (
+      <video
+        key={stream.url}
+        src={stream.url}
+        controls
+        autoPlay
+        className="w-full h-full object-contain bg-black"
+        controlsList="nodownload"
+      />
+    );
+  }
+
+  if (isM3u8Url(stream.url)) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-white gap-3 bg-black">
+        <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center">
+          <Play className="w-6 h-6" />
+        </div>
+        <p className="text-sm font-medium">HLS Stream</p>
+        <a
+          href={stream.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-primary underline"
+        >
+          Open in external player
+        </a>
+      </div>
+    );
+  }
+
+  // Default: iframe for YouTube embeds, Twitch, etc.
+  return (
+    <iframe
+      key={stream.url}
+      src={stream.url}
+      allowFullScreen
+      allow="autoplay; encrypted-media; picture-in-picture"
+      className="w-full h-full border-0"
+      referrerPolicy="no-referrer-when-downgrade"
+    />
+  );
+}
+
 export default function StreamPage() {
   const { id } = useParams();
   const matchId = parseInt(id || "0", 10);
@@ -39,7 +103,8 @@ export default function StreamPage() {
     );
   }
 
-  const activeStream = match.streams?.find((s) => s.id === activeStreamId) || match.streams?.[0];
+  const streams = match.streams ?? [];
+  const activeStream = streams.find((s) => s.id === activeStreamId) || streams[0];
 
   return (
     <div className="pb-6">
@@ -54,21 +119,16 @@ export default function StreamPage() {
       </div>
 
       {/* Video Player */}
-      <div className="bg-black aspect-video relative">
+      <div className="bg-black aspect-video relative overflow-hidden">
         {activeStream ? (
-          <iframe
-            key={activeStream.id}
-            src={activeStream.url}
-            allowFullScreen
-            allow="autoplay; encrypted-media"
-            className="w-full h-full border-0"
-          />
+          <StreamPlayer stream={activeStream} />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground gap-3">
             <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
               <Play className="w-6 h-6 opacity-30" />
             </div>
-            <p className="text-sm font-medium">No stream available</p>
+            <p className="text-sm font-medium">No stream available for this match</p>
+            <p className="text-xs text-muted-foreground/70">Streams are added by admins before/during the match</p>
           </div>
         )}
       </div>
@@ -76,24 +136,14 @@ export default function StreamPage() {
       {/* Match info bar */}
       <div className="px-4 py-3 bg-card border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <TeamLogo
-            url={match.homeTeam.logoUrl}
-            name={match.homeTeam.name}
-            shortName={match.homeTeam.shortName}
-            className="w-7 h-7"
-          />
+          <TeamLogo url={match.homeTeam.logoUrl} name={match.homeTeam.name} shortName={match.homeTeam.shortName} className="w-7 h-7" />
           <div className="flex flex-col">
             <span className="text-xs font-bold text-foreground">
               {match.homeTeam.shortName} {match.homeScore} - {match.awayScore} {match.awayTeam.shortName}
             </span>
             <span className="text-[10px] text-muted-foreground">{match.competition}</span>
           </div>
-          <TeamLogo
-            url={match.awayTeam.logoUrl}
-            name={match.awayTeam.name}
-            shortName={match.awayTeam.shortName}
-            className="w-7 h-7"
-          />
+          <TeamLogo url={match.awayTeam.logoUrl} name={match.awayTeam.name} shortName={match.awayTeam.shortName} className="w-7 h-7" />
         </div>
         {match.status === "live" && match.minute && (
           <span className="text-xs font-bold text-red-400 flex items-center gap-1">
@@ -104,17 +154,18 @@ export default function StreamPage() {
       </div>
 
       {/* Stream selector */}
-      {match.streams && match.streams.length > 0 && (
+      {streams.length > 0 && (
         <div className="px-4 pt-4">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Available Streams</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
+            Available Streams ({streams.length})
+          </p>
           <div className="grid grid-cols-2 gap-2">
-            {match.streams.map((stream) => {
+            {streams.map((stream) => {
               const isActive = activeStream?.id === stream.id;
               return (
                 <button
                   key={stream.id}
                   onClick={() => setActiveStreamId(stream.id)}
-                  data-testid={`stream-btn-${stream.id}`}
                   className={cn(
                     "rounded-xl border p-3 text-left transition-all",
                     isActive
@@ -125,7 +176,7 @@ export default function StreamPage() {
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-semibold text-foreground truncate">{stream.label}</span>
                     <span className={cn(
-                      "text-[9px] font-black px-1.5 py-0.5 rounded",
+                      "text-[9px] font-black px-1.5 py-0.5 rounded shrink-0 ml-1",
                       isActive ? "bg-primary text-white" : "bg-muted text-muted-foreground"
                     )}>
                       {stream.quality}
@@ -143,7 +194,7 @@ export default function StreamPage() {
       <div className="px-4 pt-4">
         <div className="bg-muted/50 rounded-xl border border-border p-3">
           <p className="text-xs text-muted-foreground leading-relaxed">
-            If the stream buffers or fails to load, try a different source. Streams are aggregated from third-party providers.
+            If the stream fails to load, try a different source or refresh the page. For best experience use a stable connection.
           </p>
         </div>
       </div>
