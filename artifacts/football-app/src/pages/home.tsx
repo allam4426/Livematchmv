@@ -1,19 +1,27 @@
-import { useListLiveMatches, useListMatches, useListCompetitions } from "@workspace/api-client-react";
+import { useListLiveMatches, useListMatches, useListCompetitions, useListActiveTournaments } from "@workspace/api-client-react";
 import { MatchCard } from "@/components/match-card";
 import { MatchRow } from "@/components/match-row";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
-  addDays, subDays, format, isToday, isSameDay,
+  addDays, format, isToday, isSameDay,
   startOfMonth, endOfMonth, eachDayOfInterval, getDay,
   addMonths, subMonths, isBefore, startOfDay,
 } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Trophy, CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Trophy, CalendarDays, ChevronLeft, ChevronRight, X, Layers } from "lucide-react";
+import { Link } from "wouter";
 
 const SPORTS = ["All", "Football", "Futsal"];
 const STRIP_BEFORE = 3;
 const STRIP_AFTER = 10;
+
+const TOURNAMENT_STATUS: Record<string, { label: string; className: string; dot?: boolean }> = {
+  live:     { label: "Live",     className: "bg-red-500/15 text-red-400 border-red-500/30", dot: true },
+  ongoing:  { label: "Ongoing",  className: "bg-primary/15 text-primary border-primary/30" },
+  upcoming: { label: "Upcoming", className: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
+  finished: { label: "Finished", className: "bg-muted text-muted-foreground border-border" },
+};
 
 function CalendarPicker({
   selected,
@@ -27,23 +35,13 @@ function CalendarPicker({
   const [viewMonth, setViewMonth] = useState(startOfMonth(selected));
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [onClose]);
-
   const firstDay = startOfMonth(viewMonth);
   const lastDay = endOfMonth(viewMonth);
   const days = eachDayOfInterval({ start: firstDay, end: lastDay });
-  // pad start — Sun=0, Mon=1 … map to Mon-first grid
-  const startPad = (getDay(firstDay) + 6) % 7; // 0=Mon … 6=Sun
+  const startPad = (getDay(firstDay) + 6) % 7;
 
   return (
     <div ref={ref} className="absolute top-full left-0 right-0 mt-1 z-50 bg-card border border-border rounded-2xl shadow-2xl p-4 mx-4">
-      {/* Month navigation */}
       <div className="flex items-center justify-between mb-3">
         <button onClick={() => setViewMonth(subMonths(viewMonth, 1))}
           className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
@@ -55,40 +53,29 @@ function CalendarPicker({
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
-
-      {/* Day-of-week headers */}
       <div className="grid grid-cols-7 mb-1">
         {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
           <div key={i} className="text-center text-[10px] font-bold text-muted-foreground py-1">{d}</div>
         ))}
       </div>
-
-      {/* Day grid */}
       <div className="grid grid-cols-7 gap-0.5">
         {Array.from({ length: startPad }).map((_, i) => <div key={`pad-${i}`} />)}
         {days.map(day => {
           const isSel = isSameDay(day, selected);
           const todayFlag = isToday(day);
           return (
-            <button
-              key={day.toISOString()}
-              onClick={() => { onSelect(day); onClose(); }}
+            <button key={day.toISOString()} onClick={() => { onSelect(day); onClose(); }}
               className={cn(
                 "aspect-square flex items-center justify-center rounded-xl text-xs font-semibold transition-all",
-                isSel
-                  ? "bg-primary text-white font-bold"
-                  : todayFlag
-                  ? "text-primary border border-primary/40 hover:bg-primary/10"
+                isSel ? "bg-primary text-white font-bold"
+                  : todayFlag ? "text-primary border border-primary/40 hover:bg-primary/10"
                   : "text-foreground hover:bg-muted"
-              )}
-            >
+              )}>
               {format(day, "d")}
             </button>
           );
         })}
       </div>
-
-      {/* Quick-jump footer */}
       <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
         <button onClick={() => { onSelect(new Date()); onClose(); }}
           className="flex-1 py-2 rounded-xl text-xs font-bold bg-muted text-muted-foreground hover:bg-muted/80 transition-colors">
@@ -107,6 +94,12 @@ function CalendarPicker({
   );
 }
 
+const FORMAT_LABELS: Record<string, string> = {
+  league: "League",
+  group_stage: "Group Stage",
+  knockout: "Knockout",
+};
+
 export default function Home() {
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
   const [selectedSport, setSelectedSport] = useState("All");
@@ -116,8 +109,8 @@ export default function Home() {
   const { data: liveMatches, isLoading: liveLoading } = useListLiveMatches();
   const { data: allMatches, isLoading: matchesLoading } = useListMatches({ limit: 500 });
   const { data: competitions } = useListCompetitions();
+  const { data: activeTournaments, isLoading: tournamentsLoading } = useListActiveTournaments();
 
-  // Build a strip of days centered on selectedDate
   const stripDays = Array.from({ length: STRIP_BEFORE + STRIP_AFTER + 1 }, (_, i) =>
     addDays(selectedDate, i - STRIP_BEFORE)
   );
@@ -138,9 +131,12 @@ export default function Home() {
     }
   }
 
+  const filteredTournaments = activeTournaments?.filter(t =>
+    selectedSport === "All" || t.sport?.toLowerCase() === selectedSport.toLowerCase()
+  );
+
   const handleDaySelect = (day: Date) => {
     setSelectedDate(startOfDay(day));
-    // Scroll strip to start after selection from calendar
     setTimeout(() => stripRef.current?.scrollTo({ left: 0, behavior: "smooth" }), 50);
   };
 
@@ -163,25 +159,16 @@ export default function Home() {
       {/* Date selector row: strip + calendar button */}
       <div className="relative px-4 pb-3">
         <div className="flex items-center gap-2">
-          {/* Scrollable day strip */}
-          <div
-            ref={stripRef}
-            className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar flex-1"
-          >
+          <div ref={stripRef} className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar flex-1">
             {stripDays.map(day => {
               const isSel = isSameDay(day, selectedDate);
               const todayFlag = isToday(day);
               return (
-                <button
-                  key={day.toISOString()}
-                  onClick={() => handleDaySelect(day)}
+                <button key={day.toISOString()} onClick={() => handleDaySelect(day)}
                   className={cn(
                     "flex flex-col items-center justify-center rounded-xl px-3 py-2 min-w-[64px] shrink-0 transition-all font-medium",
-                    isSel
-                      ? "bg-primary text-white"
-                      : "bg-card text-muted-foreground hover:bg-accent"
-                  )}
-                >
+                    isSel ? "bg-primary text-white" : "bg-card text-muted-foreground hover:bg-accent"
+                  )}>
                   <span className={cn("text-[9px] uppercase tracking-wide font-bold",
                     isSel ? "text-white/80" : "text-muted-foreground")}>
                     {todayFlag ? "TODAY" : format(day, "EEE").toUpperCase()}
@@ -194,28 +181,18 @@ export default function Home() {
               );
             })}
           </div>
-
-          {/* Calendar picker button */}
-          <button
-            onClick={() => setShowCalendar(v => !v)}
+          <button onClick={() => setShowCalendar(v => !v)}
             className={cn(
               "shrink-0 w-11 h-11 rounded-xl flex items-center justify-center border transition-all",
               showCalendar
                 ? "bg-primary text-white border-primary"
                 : "bg-card text-muted-foreground border-border hover:border-primary/50 hover:text-primary"
-            )}
-          >
+            )}>
             <CalendarDays className="w-5 h-5" />
           </button>
         </div>
-
-        {/* Calendar dropdown */}
         {showCalendar && (
-          <CalendarPicker
-            selected={selectedDate}
-            onSelect={handleDaySelect}
-            onClose={() => setShowCalendar(false)}
-          />
+          <CalendarPicker selected={selectedDate} onSelect={handleDaySelect} onClose={() => setShowCalendar(false)} />
         )}
       </div>
 
@@ -234,16 +211,13 @@ export default function Home() {
       {/* Sport Filter Pills */}
       <div className="flex items-center gap-2 px-4 pb-4 overflow-x-auto hide-scrollbar">
         {SPORTS.map(sport => (
-          <button
-            key={sport}
-            onClick={() => setSelectedSport(sport)}
+          <button key={sport} onClick={() => setSelectedSport(sport)}
             className={cn(
               "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold shrink-0 transition-all border",
               selectedSport === sport
                 ? "bg-primary text-white border-primary"
                 : "bg-card text-muted-foreground border-border hover:border-primary/40"
-            )}
-          >
+            )}>
             {sport === "Football" && <span className="text-base leading-none">⚽</span>}
             {sport === "Futsal" && <span className="text-base leading-none">🥅</span>}
             {sport}
@@ -265,6 +239,66 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Tournaments section */}
+      {(tournamentsLoading || (filteredTournaments && filteredTournaments.length > 0)) && (
+        <div className="mb-5">
+          <div className="flex items-center justify-between px-4 mb-3">
+            <div className="flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-primary" />
+              <span className="text-sm font-black text-foreground tracking-tight">Tournaments</span>
+            </div>
+          </div>
+
+          {tournamentsLoading ? (
+            <div className="flex gap-3 overflow-x-auto hide-scrollbar px-4 pb-1">
+              {[1,2,3].map(i => <Skeleton key={i} className="w-44 h-28 rounded-2xl shrink-0" />)}
+            </div>
+          ) : (
+            <div className="flex gap-3 overflow-x-auto hide-scrollbar px-4 pb-1 snap-x snap-mandatory">
+              {filteredTournaments?.map(t => {
+                const badge = TOURNAMENT_STATUS[t.matchStatus] ?? TOURNAMENT_STATUS.finished!;
+                return (
+                  <Link key={t.id} href={`/tournament/${t.id}`}>
+                    <div className="w-44 shrink-0 snap-center bg-card border border-border rounded-2xl p-3.5 cursor-pointer hover:border-primary/50 transition-all active:scale-[0.98]">
+                      <div className="flex items-start gap-2.5 mb-3">
+                        <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                          {t.logoUrl ? (
+                            <img src={t.logoUrl} alt={t.name} className="w-8 h-8 object-contain" />
+                          ) : (
+                            <Trophy className="w-5 h-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-black text-foreground leading-tight line-clamp-2">{t.name}</p>
+                          <p className="text-[9px] text-muted-foreground mt-0.5 capitalize">{t.season}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className={cn("inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border", badge.className)}>
+                          {badge.dot && <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />}
+                          {badge.label}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Layers className="w-2.5 h-2.5 text-muted-foreground" />
+                          <span className="text-[9px] text-muted-foreground font-semibold">
+                            {FORMAT_LABELS[t.format] ?? t.format}
+                          </span>
+                        </div>
+                      </div>
+
+                      {(t.liveCount ?? 0) > 0 && (
+                        <p className="text-[9px] text-red-400 font-bold mt-1.5">{t.liveCount} match{(t.liveCount ?? 0) > 1 ? "es" : ""} live</p>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

@@ -10,6 +10,7 @@ export const tournamentsTable = pgTable("tournaments", {
   logoUrl: text("logo_url"),
   description: text("description"),
   active: boolean("active").notNull().default(true),
+  format: text("format").notNull().default("league"),
 });
 
 export const insertTournamentSchema = createInsertSchema(tournamentsTable).omit({ id: true });

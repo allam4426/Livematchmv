@@ -22,4 +22,5 @@ export interface MatchInput {
   sport: MatchInputSport;
   tournamentId?: number;
   venue?: string;
+  matchGroup?: string;
 }

@@ -1,13 +1,19 @@
 import { useState } from "react";
-import { useListTournaments, useCreateTournament, useDeleteTournament, useGetTournamentStandings, getListTournamentsQueryKey, getGetTournamentStandingsQueryKey } from "@workspace/api-client-react";
+import {
+  useListTournaments, useCreateTournament, useDeleteTournament, useUpdateTournament,
+  useGetTournamentStandings,
+  getListTournamentsQueryKey, getGetTournamentStandingsQueryKey
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trash2, Plus, X, Trophy, ChevronDown } from "lucide-react";
+import { Trash2, Plus, X, Trophy, ChevronDown, Layers } from "lucide-react";
 import { TeamLogo } from "@/components/team-logo";
 import { cn } from "@/lib/utils";
 
 type Sport = "football" | "futsal";
-const EMPTY = { name: "", sport: "football" as Sport, season: "", logoUrl: "", description: "" };
+type Format = "league" | "group_stage" | "knockout";
+const EMPTY = { name: "", sport: "football" as Sport, season: "", logoUrl: "", description: "", format: "league" as Format };
+const FORMAT_LABELS: Record<Format, string> = { league: "League", group_stage: "Group Stage", knockout: "Knockout" };
 
 export function TournamentsTab() {
   const qc = useQueryClient();
@@ -66,7 +72,15 @@ export function TournamentsTab() {
               <input value={form.season} onChange={e => setForm(f => ({ ...f, season: e.target.value }))}
                 placeholder="2024/25" className="admin-input" />
             </div>
-            <div className="col-span-2">
+            <div>
+              <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Format</label>
+              <select value={form.format} onChange={e => setForm(f => ({ ...f, format: e.target.value as Format }))} className="admin-input">
+                <option value="league">League</option>
+                <option value="group_stage">Group Stage</option>
+                <option value="knockout">Knockout</option>
+              </select>
+            </div>
+            <div>
               <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Logo URL</label>
               <input value={form.logoUrl} onChange={e => setForm(f => ({ ...f, logoUrl: e.target.value }))}
                 placeholder="https://..." className="admin-input" />
@@ -74,7 +88,7 @@ export function TournamentsTab() {
             <div className="col-span-2">
               <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Description</label>
               <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                placeholder="Optional description" className="admin-input" />
+                placeholder="Optional" className="admin-input" />
             </div>
           </div>
           <button type="submit" disabled={createTournament.isPending}
@@ -100,17 +114,22 @@ export function TournamentsTab() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{t.sport} · {t.season}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] text-muted-foreground capitalize">{t.sport} · {t.season}</span>
+                    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full border border-border">
+                      <Layers className="w-2.5 h-2.5" />{FORMAT_LABELS[t.format as Format] ?? t.format}
+                    </span>
+                  </div>
                 </div>
                 <button onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
-                  className="text-muted-foreground hover:text-foreground p-1">
+                  className={cn("text-muted-foreground hover:text-foreground p-1 transition-colors", expandedId === t.id && "text-primary")}>
                   <ChevronDown className={cn("w-4 h-4 transition-transform", expandedId === t.id && "rotate-180")} />
                 </button>
                 <button onClick={() => handleDelete(t.id)} className="text-muted-foreground hover:text-red-400 transition-colors p-1">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-              {expandedId === t.id && <StandingsPanel tournamentId={t.id} />}
+              {expandedId === t.id && <StandingsPanel tournamentId={t.id} format={(t.format as Format) ?? "league"} />}
             </div>
           ))}
         </div>
@@ -123,50 +142,69 @@ export function TournamentsTab() {
   );
 }
 
-function StandingsPanel({ tournamentId }: { tournamentId: number }) {
+function StandingsPanel({ tournamentId, format }: { tournamentId: number; format: string }) {
   const { data: standings, isLoading } = useGetTournamentStandings(tournamentId, {
     query: { enabled: true, queryKey: getGetTournamentStandingsQueryKey(tournamentId) }
   });
 
-  if (isLoading) return <div className="px-4 pb-3"><Skeleton className="h-20 w-full rounded" /></div>;
-  if (!standings?.length) return <p className="px-4 pb-3 text-xs text-muted-foreground">No finished matches yet — standings will appear here.</p>;
+  if (isLoading) return <div className="px-4 pb-3 pt-2"><Skeleton className="h-20 w-full rounded" /></div>;
+
+  const groups = standings?.groups ?? {};
+  const groupNames = Object.keys(groups);
+
+  if (groupNames.length === 0 || groupNames.every(k => groups[k]?.length === 0)) {
+    return <p className="px-4 pb-3 pt-1 text-xs text-muted-foreground">No finished matches yet — standings will appear here.</p>;
+  }
 
   return (
-    <div className="border-t border-border px-4 pb-3 pt-2">
-      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Standings</p>
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="text-muted-foreground">
-            <th className="text-left font-semibold pb-1 w-6">#</th>
-            <th className="text-left font-semibold pb-1">Team</th>
-            <th className="text-center font-semibold pb-1 w-8">P</th>
-            <th className="text-center font-semibold pb-1 w-8">W</th>
-            <th className="text-center font-semibold pb-1 w-8">D</th>
-            <th className="text-center font-semibold pb-1 w-8">L</th>
-            <th className="text-center font-semibold pb-1 w-8">GD</th>
-            <th className="text-center font-semibold pb-1 w-8 text-primary">Pts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {standings.map(row => (
-            <tr key={row.position} className="border-t border-border/30">
-              <td className="py-1.5 text-muted-foreground">{row.position}</td>
-              <td className="py-1.5">
-                <div className="flex items-center gap-1.5">
-                  <TeamLogo url={row.team.logoUrl} name={row.team.name} shortName={row.team.shortName} className="w-4 h-4" />
-                  <span className="font-semibold text-foreground truncate max-w-[80px]">{row.team.name}</span>
-                </div>
-              </td>
-              <td className="py-1.5 text-center text-muted-foreground">{row.played}</td>
-              <td className="py-1.5 text-center text-muted-foreground">{row.won}</td>
-              <td className="py-1.5 text-center text-muted-foreground">{row.drawn}</td>
-              <td className="py-1.5 text-center text-muted-foreground">{row.lost}</td>
-              <td className="py-1.5 text-center text-muted-foreground">{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</td>
-              <td className="py-1.5 text-center font-black text-primary">{row.points}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="border-t border-border">
+      {groupNames.map(groupName => {
+        const rows = groups[groupName] ?? [];
+        return (
+          <div key={groupName}>
+            <div className="flex items-center gap-2 px-4 py-2 bg-muted/20 border-b border-border/50">
+              <Trophy className="w-3 h-3 text-primary" />
+              <p className="text-[10px] font-black text-foreground uppercase tracking-wider">{groupName}</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs min-w-[320px]">
+                <thead>
+                  <tr className="text-muted-foreground px-4">
+                    <th className="text-left font-semibold pb-1 pt-2 pl-4 w-6">#</th>
+                    <th className="text-left font-semibold pb-1 pt-2">Team</th>
+                    <th className="text-center font-semibold pb-1 pt-2 w-7">P</th>
+                    <th className="text-center font-semibold pb-1 pt-2 w-7">W</th>
+                    <th className="text-center font-semibold pb-1 pt-2 w-7">D</th>
+                    <th className="text-center font-semibold pb-1 pt-2 w-7">L</th>
+                    <th className="text-center font-semibold pb-1 pt-2 w-8">GD</th>
+                    <th className="text-center font-semibold pb-1 pt-2 w-8 text-primary pr-4">Pts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, idx) => (
+                    <tr key={row.position}
+                      className={cn("border-t border-border/30", format === "group_stage" && idx < 2 && "bg-primary/5")}>
+                      <td className="py-1.5 pl-4 text-muted-foreground">{row.position}</td>
+                      <td className="py-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <TeamLogo url={row.team.logoUrl} name={row.team.name} shortName={row.team.shortName} className="w-4 h-4" />
+                          <span className="font-semibold text-foreground truncate max-w-[80px]">{row.team.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-1.5 text-center text-muted-foreground">{row.played}</td>
+                      <td className="py-1.5 text-center text-muted-foreground">{row.won}</td>
+                      <td className="py-1.5 text-center text-muted-foreground">{row.drawn}</td>
+                      <td className="py-1.5 text-center text-muted-foreground">{row.lost}</td>
+                      <td className="py-1.5 text-center text-muted-foreground">{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</td>
+                      <td className="py-1.5 text-center font-black text-primary pr-4">{row.points}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

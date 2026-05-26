@@ -29,4 +29,6 @@ export interface Match {
   tournamentId?: number | null;
   /** @nullable */
   venue?: string | null;
+  /** @nullable */
+  matchGroup?: string | null;
 }

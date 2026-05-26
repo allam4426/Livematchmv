@@ -26,6 +26,7 @@ const EMPTY_FORM = {
   homeTeamId: 0, awayTeamId: 0, competition: "", kickoffAt: "",
   sport: "football" as Sport, tournamentId: 0, venue: "",
   homeScore: 0, awayScore: 0, status: "scheduled" as Status, minute: "", featured: false,
+  matchGroup: "",
 };
 
 export function MatchesTab() {
@@ -60,6 +61,7 @@ export function MatchesTab() {
         tournamentId: form.tournamentId || undefined,
         minute: form.minute || undefined,
         venue: form.venue || undefined,
+        matchGroup: form.matchGroup || undefined,
       }
     }, { onSuccess: () => { setForm({ ...EMPTY_FORM }); setShowForm(false); invalidate(); } });
   };
@@ -169,6 +171,13 @@ export function MatchesTab() {
               <input value={form.venue} onChange={e => setForm(f => ({ ...f, venue: e.target.value }))}
                 placeholder="Wembley Stadium" className="admin-input" />
             </div>
+            {tournaments?.find(t => t.id === form.tournamentId)?.format === "group_stage" && (
+              <div>
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Group</label>
+                <input value={form.matchGroup} onChange={e => setForm(f => ({ ...f, matchGroup: e.target.value }))}
+                  placeholder="Group A" className="admin-input" />
+              </div>
+            )}
             <div className="flex items-center gap-2 mt-4">
               <input type="checkbox" id="featured" checked={form.featured}
                 onChange={e => setForm(f => ({ ...f, featured: e.target.checked }))}

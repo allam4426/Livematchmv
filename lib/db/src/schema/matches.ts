@@ -19,6 +19,7 @@ export const matchesTable = pgTable("matches", {
   sport: text("sport").notNull().default("football"),
   tournamentId: integer("tournament_id").references(() => tournamentsTable.id, { onDelete: "set null" }),
   venue: text("venue"),
+  matchGroup: text("match_group"),
 });
 
 export const insertMatchSchema = createInsertSchema(matchesTable).omit({ id: true });

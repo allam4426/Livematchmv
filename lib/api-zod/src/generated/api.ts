@@ -239,7 +239,8 @@ export const ListTournamentsResponseItem = zod.object({
   "season": zod.string(),
   "logoUrl": zod.string().nullish(),
   "description": zod.string().nullish(),
-  "active": zod.boolean()
+  "active": zod.boolean(),
+  "format": zod.enum(['league', 'group_stage', 'knockout'])
 })
 export const ListTournamentsResponse = zod.array(ListTournamentsResponseItem)
 
@@ -252,7 +253,8 @@ export const CreateTournamentBody = zod.object({
   "sport": zod.enum(['football', 'futsal']),
   "season": zod.string(),
   "logoUrl": zod.string().optional(),
-  "description": zod.string().optional()
+  "description": zod.string().optional(),
+  "format": zod.enum(['league', 'group_stage', 'knockout']).optional()
 })
 
 
@@ -270,7 +272,8 @@ export const GetTournamentResponse = zod.object({
   "season": zod.string(),
   "logoUrl": zod.string().nullish(),
   "description": zod.string().nullish(),
-  "active": zod.boolean()
+  "active": zod.boolean(),
+  "format": zod.enum(['league', 'group_stage', 'knockout'])
 })
 
 
@@ -287,7 +290,8 @@ export const UpdateTournamentBody = zod.object({
   "season": zod.string().optional(),
   "logoUrl": zod.string().optional(),
   "description": zod.string().optional(),
-  "active": zod.boolean().optional()
+  "active": zod.boolean().optional(),
+  "format": zod.enum(['league', 'group_stage', 'knockout']).optional()
 })
 
 export const UpdateTournamentResponse = zod.object({
@@ -297,7 +301,8 @@ export const UpdateTournamentResponse = zod.object({
   "season": zod.string(),
   "logoUrl": zod.string().nullish(),
   "description": zod.string().nullish(),
-  "active": zod.boolean()
+  "active": zod.boolean(),
+  "format": zod.enum(['league', 'group_stage', 'knockout'])
 })
 
 
@@ -310,13 +315,80 @@ export const DeleteTournamentParams = zod.object({
 
 
 /**
- * @summary Get tournament standings
+ * @summary List tournaments with match activity status
+ */
+export const ListActiveTournamentsQueryParams = zod.object({
+  "sport": zod.coerce.string().optional()
+})
+
+export const ListActiveTournamentsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "sport": zod.enum(['football', 'futsal']),
+  "season": zod.string(),
+  "logoUrl": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "active": zod.boolean(),
+  "format": zod.enum(['league', 'group_stage', 'knockout']),
+  "matchStatus": zod.enum(['live', 'ongoing', 'upcoming', 'finished']),
+  "matchCount": zod.number(),
+  "liveCount": zod.number().optional()
+})
+export const ListActiveTournamentsResponse = zod.array(ListActiveTournamentsResponseItem)
+
+
+/**
+ * @summary Get all matches for a tournament
+ */
+export const GetTournamentMatchesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetTournamentMatchesResponseItem = zod.object({
+  "id": zod.number(),
+  "homeTeam": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string(),
+  "logoUrl": zod.string(),
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
+}),
+  "awayTeam": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string(),
+  "logoUrl": zod.string(),
+  "country": zod.string(),
+  "sport": zod.enum(['football', 'futsal'])
+}),
+  "homeScore": zod.number(),
+  "awayScore": zod.number(),
+  "status": zod.enum(['live', 'scheduled', 'finished', 'postponed']),
+  "minute": zod.string().nullable(),
+  "competition": zod.string(),
+  "competitionLogo": zod.string().nullish(),
+  "kickoffAt": zod.coerce.date(),
+  "streamCount": zod.number(),
+  "featured": zod.boolean().optional(),
+  "sport": zod.enum(['football', 'futsal']),
+  "tournamentId": zod.number().nullish(),
+  "venue": zod.string().nullish(),
+  "matchGroup": zod.string().nullish()
+})
+export const GetTournamentMatchesResponse = zod.array(GetTournamentMatchesResponseItem)
+
+
+/**
+ * @summary Get tournament standings (grouped by group for group-stage format)
  */
 export const GetTournamentStandingsParams = zod.object({
   "id": zod.coerce.number()
 })
 
-export const GetTournamentStandingsResponseItem = zod.object({
+export const GetTournamentStandingsResponse = zod.object({
+  "format": zod.enum(['league', 'group_stage', 'knockout']),
+  "groups": zod.record(zod.string(), zod.array(zod.object({
   "position": zod.number(),
   "team": zod.object({
   "id": zod.number(),
@@ -334,8 +406,8 @@ export const GetTournamentStandingsResponseItem = zod.object({
   "goalsAgainst": zod.number(),
   "goalDifference": zod.number(),
   "points": zod.number()
+})))
 })
-export const GetTournamentStandingsResponse = zod.array(GetTournamentStandingsResponseItem)
 
 
 /**
@@ -380,7 +452,8 @@ export const ListMatchesResponseItem = zod.object({
   "featured": zod.boolean().optional(),
   "sport": zod.enum(['football', 'futsal']),
   "tournamentId": zod.number().nullish(),
-  "venue": zod.string().nullish()
+  "venue": zod.string().nullish(),
+  "matchGroup": zod.string().nullish()
 })
 export const ListMatchesResponse = zod.array(ListMatchesResponseItem)
 
@@ -401,7 +474,8 @@ export const CreateMatchBody = zod.object({
   "featured": zod.boolean().optional(),
   "sport": zod.enum(['football', 'futsal']),
   "tournamentId": zod.number().optional(),
-  "venue": zod.string().optional()
+  "venue": zod.string().optional(),
+  "matchGroup": zod.string().optional()
 })
 
 
@@ -441,7 +515,8 @@ export const ListLiveMatchesResponseItem = zod.object({
   "featured": zod.boolean().optional(),
   "sport": zod.enum(['football', 'futsal']),
   "tournamentId": zod.number().nullish(),
-  "venue": zod.string().nullish()
+  "venue": zod.string().nullish(),
+  "matchGroup": zod.string().nullish()
 })
 export const ListLiveMatchesResponse = zod.array(ListLiveMatchesResponseItem)
 
@@ -551,7 +626,8 @@ export const UpdateMatchResponse = zod.object({
   "featured": zod.boolean().optional(),
   "sport": zod.enum(['football', 'futsal']),
   "tournamentId": zod.number().nullish(),
-  "venue": zod.string().nullish()
+  "venue": zod.string().nullish(),
+  "matchGroup": zod.string().nullish()
 })
 
 

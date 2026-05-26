@@ -74,6 +74,15 @@ export const TournamentSport = {
   futsal: 'futsal',
 } as const;
 
+export type TournamentFormat = typeof TournamentFormat[keyof typeof TournamentFormat];
+
+
+export const TournamentFormat = {
+  league: 'league',
+  group_stage: 'group_stage',
+  knockout: 'knockout',
+} as const;
+
 export interface Tournament {
   id: number;
   name: string;
@@ -84,6 +93,50 @@ export interface Tournament {
   /** @nullable */
   description?: string | null;
   active: boolean;
+  format: TournamentFormat;
+}
+
+export type TournamentWithStatusSport = typeof TournamentWithStatusSport[keyof typeof TournamentWithStatusSport];
+
+
+export const TournamentWithStatusSport = {
+  football: 'football',
+  futsal: 'futsal',
+} as const;
+
+export type TournamentWithStatusFormat = typeof TournamentWithStatusFormat[keyof typeof TournamentWithStatusFormat];
+
+
+export const TournamentWithStatusFormat = {
+  league: 'league',
+  group_stage: 'group_stage',
+  knockout: 'knockout',
+} as const;
+
+export type TournamentWithStatusMatchStatus = typeof TournamentWithStatusMatchStatus[keyof typeof TournamentWithStatusMatchStatus];
+
+
+export const TournamentWithStatusMatchStatus = {
+  live: 'live',
+  ongoing: 'ongoing',
+  upcoming: 'upcoming',
+  finished: 'finished',
+} as const;
+
+export interface TournamentWithStatus {
+  id: number;
+  name: string;
+  sport: TournamentWithStatusSport;
+  season: string;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  description?: string | null;
+  active: boolean;
+  format: TournamentWithStatusFormat;
+  matchStatus: TournamentWithStatusMatchStatus;
+  matchCount: number;
+  liveCount?: number;
 }
 
 export type TournamentInputSport = typeof TournamentInputSport[keyof typeof TournamentInputSport];
@@ -94,12 +147,22 @@ export const TournamentInputSport = {
   futsal: 'futsal',
 } as const;
 
+export type TournamentInputFormat = typeof TournamentInputFormat[keyof typeof TournamentInputFormat];
+
+
+export const TournamentInputFormat = {
+  league: 'league',
+  group_stage: 'group_stage',
+  knockout: 'knockout',
+} as const;
+
 export interface TournamentInput {
   name: string;
   sport: TournamentInputSport;
   season: string;
   logoUrl?: string;
   description?: string;
+  format?: TournamentInputFormat;
 }
 
 export type TournamentUpdateSport = typeof TournamentUpdateSport[keyof typeof TournamentUpdateSport];
@@ -110,6 +173,15 @@ export const TournamentUpdateSport = {
   futsal: 'futsal',
 } as const;
 
+export type TournamentUpdateFormat = typeof TournamentUpdateFormat[keyof typeof TournamentUpdateFormat];
+
+
+export const TournamentUpdateFormat = {
+  league: 'league',
+  group_stage: 'group_stage',
+  knockout: 'knockout',
+} as const;
+
 export interface TournamentUpdate {
   name?: string;
   sport?: TournamentUpdateSport;
@@ -117,7 +189,17 @@ export interface TournamentUpdate {
   logoUrl?: string;
   description?: string;
   active?: boolean;
+  format?: TournamentUpdateFormat;
 }
+
+export type TournamentStandingsFormat = typeof TournamentStandingsFormat[keyof typeof TournamentStandingsFormat];
+
+
+export const TournamentStandingsFormat = {
+  league: 'league',
+  group_stage: 'group_stage',
+  knockout: 'knockout',
+} as const;
 
 export interface StandingRow {
   position: number;
@@ -130,6 +212,13 @@ export interface StandingRow {
   goalsAgainst: number;
   goalDifference: number;
   points: number;
+}
+
+export type TournamentStandingsGroups = {[key: string]: StandingRow[]};
+
+export interface TournamentStandings {
+  format: TournamentStandingsFormat;
+  groups: TournamentStandingsGroups;
 }
 
 export type MatchStatus = typeof MatchStatus[keyof typeof MatchStatus];
@@ -170,6 +259,8 @@ export interface Match {
   tournamentId?: number | null;
   /** @nullable */
   venue?: string | null;
+  /** @nullable */
+  matchGroup?: string | null;
 }
 
 export type MatchDetailStatus = typeof MatchDetailStatus[keyof typeof MatchDetailStatus];
@@ -296,6 +387,7 @@ export interface MatchInput {
   sport: MatchInputSport;
   tournamentId?: number;
   venue?: string;
+  matchGroup?: string;
 }
 
 export type MatchUpdateStatus = typeof MatchUpdateStatus[keyof typeof MatchUpdateStatus];
@@ -492,6 +584,10 @@ export const ListTournamentsSport = {
   futsal: 'futsal',
   all: 'all',
 } as const;
+
+export type ListActiveTournamentsParams = {
+sport?: string;
+};
 
 export type ListMatchesParams = {
 status?: ListMatchesStatus;

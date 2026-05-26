@@ -28,6 +28,7 @@ import type {
   HighlightInput,
   LineupPlayer,
   LineupPlayerInput,
+  ListActiveTournamentsParams,
   ListHighlightsParams,
   ListLiveMatchesParams,
   ListMatchesParams,
@@ -43,7 +44,6 @@ import type {
   MatchUpdate,
   SquadPlayer,
   SquadPlayerInput,
-  StandingRow,
   StatsSummary,
   Stream,
   StreamInput,
@@ -52,7 +52,9 @@ import type {
   TeamUpdate,
   Tournament,
   TournamentInput,
-  TournamentUpdate
+  TournamentStandings,
+  TournamentUpdate,
+  TournamentWithStatus
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1475,6 +1477,167 @@ export const useDeleteTournament = <TError = ErrorType<unknown>,
       return useMutation(getDeleteTournamentMutationOptions(options));
     }
 
+export const getListActiveTournamentsUrl = (params?: ListActiveTournamentsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/tournaments/active?${stringifiedParams}` : `/api/tournaments/active`
+}
+
+/**
+ * @summary List tournaments with match activity status
+ */
+export const listActiveTournaments = async (params?: ListActiveTournamentsParams, options?: RequestInit): Promise<TournamentWithStatus[]> => {
+
+  return customFetch<TournamentWithStatus[]>(getListActiveTournamentsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListActiveTournamentsQueryKey = (params?: ListActiveTournamentsParams,) => {
+    return [
+    `/api/tournaments/active`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListActiveTournamentsQueryOptions = <TData = Awaited<ReturnType<typeof listActiveTournaments>>, TError = ErrorType<unknown>>(params?: ListActiveTournamentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listActiveTournaments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListActiveTournamentsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listActiveTournaments>>> = ({ signal }) => listActiveTournaments(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listActiveTournaments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListActiveTournamentsQueryResult = NonNullable<Awaited<ReturnType<typeof listActiveTournaments>>>
+export type ListActiveTournamentsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List tournaments with match activity status
+ */
+
+export function useListActiveTournaments<TData = Awaited<ReturnType<typeof listActiveTournaments>>, TError = ErrorType<unknown>>(
+ params?: ListActiveTournamentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listActiveTournaments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListActiveTournamentsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetTournamentMatchesUrl = (id: number,) => {
+
+
+
+
+  return `/api/tournaments/${id}/matches`
+}
+
+/**
+ * @summary Get all matches for a tournament
+ */
+export const getTournamentMatches = async (id: number, options?: RequestInit): Promise<Match[]> => {
+
+  return customFetch<Match[]>(getGetTournamentMatchesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTournamentMatchesQueryKey = (id: number,) => {
+    return [
+    `/api/tournaments/${id}/matches`
+    ] as const;
+    }
+
+
+export const getGetTournamentMatchesQueryOptions = <TData = Awaited<ReturnType<typeof getTournamentMatches>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTournamentMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTournamentMatchesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTournamentMatches>>> = ({ signal }) => getTournamentMatches(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTournamentMatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTournamentMatchesQueryResult = NonNullable<Awaited<ReturnType<typeof getTournamentMatches>>>
+export type GetTournamentMatchesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get all matches for a tournament
+ */
+
+export function useGetTournamentMatches<TData = Awaited<ReturnType<typeof getTournamentMatches>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTournamentMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTournamentMatchesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getGetTournamentStandingsUrl = (id: number,) => {
 
 
@@ -1484,11 +1647,11 @@ export const getGetTournamentStandingsUrl = (id: number,) => {
 }
 
 /**
- * @summary Get tournament standings
+ * @summary Get tournament standings (grouped by group for group-stage format)
  */
-export const getTournamentStandings = async (id: number, options?: RequestInit): Promise<StandingRow[]> => {
+export const getTournamentStandings = async (id: number, options?: RequestInit): Promise<TournamentStandings> => {
 
-  return customFetch<StandingRow[]>(getGetTournamentStandingsUrl(id),
+  return customFetch<TournamentStandings>(getGetTournamentStandingsUrl(id),
   {
     ...options,
     method: 'GET'
@@ -1531,7 +1694,7 @@ export type GetTournamentStandingsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get tournament standings
+ * @summary Get tournament standings (grouped by group for group-stage format)
  */
 
 export function useGetTournamentStandings<TData = Awaited<ReturnType<typeof getTournamentStandings>>, TError = ErrorType<unknown>>(

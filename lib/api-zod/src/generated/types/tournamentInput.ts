@@ -5,6 +5,7 @@
  * FootballLive API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { TournamentInputFormat } from './tournamentInputFormat';
 import type { TournamentInputSport } from './tournamentInputSport';
 
 export interface TournamentInput {
@@ -13,4 +14,5 @@ export interface TournamentInput {
   season: string;
   logoUrl?: string;
   description?: string;
+  format?: TournamentInputFormat;
 }

@@ -387,11 +387,52 @@ paths:
         "204":
           description: Deleted
 
+  /tournaments/active:
+    get:
+      operationId: listActiveTournaments
+      tags: [tournaments]
+      summary: List tournaments with match activity status
+      parameters:
+        - name: sport
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Active tournaments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TournamentWithStatus"
+
+  /tournaments/{id}/matches:
+    get:
+      operationId: getTournamentMatches
+      tags: [tournaments]
+      summary: Get all matches for a tournament
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Tournament matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Match"
+
   /tournaments/{id}/standings:
     get:
       operationId: getTournamentStandings
       tags: [tournaments]
-      summary: Get tournament standings
+      summary: Get tournament standings (grouped by group for group-stage format)
       parameters:
         - name: id
           in: path
@@ -404,9 +445,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/StandingRow"
+                $ref: "#/components/schemas/TournamentStandings"
 
   /matches:
     get:
@@ -924,7 +963,7 @@ components:
 
     Tournament:
       type: object
-      required: [id, name, sport, season, active]
+      required: [id, name, sport, season, active, format]
       properties:
         id:
           type: integer
@@ -941,6 +980,39 @@ components:
           type: ["string", "null"]
         active:
           type: boolean
+        format:
+          type: string
+          enum: [league, group_stage, knockout]
+
+    TournamentWithStatus:
+      type: object
+      required: [id, name, sport, season, active, format, matchStatus, matchCount]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        sport:
+          type: string
+          enum: [football, futsal]
+        season:
+          type: string
+        logoUrl:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        active:
+          type: boolean
+        format:
+          type: string
+          enum: [league, group_stage, knockout]
+        matchStatus:
+          type: string
+          enum: [live, ongoing, upcoming, finished]
+        matchCount:
+          type: integer
+        liveCount:
+          type: integer
 
     TournamentInput:
       type: object
@@ -957,6 +1029,9 @@ components:
           type: string
         description:
           type: string
+        format:
+          type: string
+          enum: [league, group_stage, knockout]
 
     TournamentUpdate:
       type: object
@@ -974,6 +1049,23 @@ components:
           type: string
         active:
           type: boolean
+        format:
+          type: string
+          enum: [league, group_stage, knockout]
+
+    TournamentStandings:
+      type: object
+      required: [format, groups]
+      properties:
+        format:
+          type: string
+          enum: [league, group_stage, knockout]
+        groups:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/StandingRow"
 
     StandingRow:
       type: object
@@ -1036,6 +1128,8 @@ components:
         tournamentId:
           type: ["integer", "null"]
         venue:
+          type: ["string", "null"]
+        matchGroup:
           type: ["string", "null"]
 
     MatchDetail:
@@ -1116,6 +1210,8 @@ components:
         tournamentId:
           type: integer
         venue:
+          type: string
+        matchGroup:
           type: string
 
     MatchUpdate:

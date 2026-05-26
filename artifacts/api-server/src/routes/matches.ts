@@ -35,6 +35,7 @@ function buildMatch(row: {
     sport: row.match.sport ?? "football",
     tournamentId: row.match.tournamentId,
     venue: row.match.venue,
+    matchGroup: row.match.matchGroup,
   };
 }
 
@@ -89,7 +90,7 @@ router.post("/matches", async (req, res) => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { homeTeamId, awayTeamId, homeScore, awayScore, status, minute, competition, competitionLogo, kickoffAt, featured, sport, tournamentId, venue } = parsed.data;
+  const { homeTeamId, awayTeamId, homeScore, awayScore, status, minute, competition, competitionLogo, kickoffAt, featured, sport, tournamentId, venue, matchGroup } = parsed.data;
   const [match] = await db.insert(matchesTable).values({
     homeTeamId,
     awayTeamId,
@@ -104,6 +105,7 @@ router.post("/matches", async (req, res) => {
     sport: sport ?? "football",
     tournamentId: tournamentId ?? null,
     venue: venue ?? null,
+    matchGroup: matchGroup ?? null,
   }).returning();
 
   const homeTeam = alias(teamsTable, "homeTeam");
