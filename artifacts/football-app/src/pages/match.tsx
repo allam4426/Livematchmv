@@ -97,24 +97,24 @@ export default function MatchDetails() {
           </div>
         </div>
 
-        {/* Watch button */}
-        {isLive && match.streams && match.streams.length > 0 && (
-          <div className="px-4 pb-4">
+        {/* Watch / Kickoff button */}
+        <div className="px-4 pb-4">
+          {match.streams && match.streams.length > 0 ? (
             <Link href={`/stream/${match.id}`}>
-              <div className="flex items-center justify-center gap-2 bg-primary rounded-xl py-2.5 cursor-pointer">
+              <div className="flex items-center justify-center gap-2 bg-primary rounded-xl py-2.5 cursor-pointer hover:bg-primary/90 transition-colors">
                 <Play className="w-4 h-4 text-white" />
-                <span className="text-sm font-bold text-white">Watch Live · {match.streams.length} streams</span>
+                <span className="text-sm font-bold text-white">
+                  {isLive ? "Watch Live" : isFinished ? "Watch Replay" : "Watch Stream"}
+                  {" · "}{match.streams.length} {match.streams.length === 1 ? "stream" : "streams"}
+                </span>
               </div>
             </Link>
-          </div>
-        )}
-        {isScheduled && (
-          <div className="px-4 pb-4">
+          ) : isScheduled ? (
             <div className="flex items-center justify-center gap-2 bg-white/10 rounded-xl py-2.5">
               <span className="text-sm font-semibold text-white/70">Kickoff at {format(new Date(match.kickoffAt), "HH:mm")}</span>
             </div>
-          </div>
-        )}
+          ) : null}
+        </div>
       </div>
 
       {/* Available Streams */}
