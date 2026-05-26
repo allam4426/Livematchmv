@@ -5,3 +5,4 @@ export * from "./match_events";
 export * from "./highlights";
 export * from "./tournaments";
 export * from "./lineups";
+export * from "./squads";

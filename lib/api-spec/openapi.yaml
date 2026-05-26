@@ -183,6 +183,117 @@ paths:
         "204":
           description: Deleted
 
+  /teams/{id}/squad:
+    get:
+      operationId: getTeamSquad
+      tags: [teams]
+      summary: Get a team's squad
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Squad list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SquadPlayer"
+    post:
+      operationId: addSquadPlayer
+      tags: [teams]
+      summary: Add a player to a team's squad
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SquadPlayerInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadPlayer"
+
+  /teams/{id}/squad/{playerId}:
+    patch:
+      operationId: updateSquadPlayer
+      tags: [teams]
+      summary: Update a squad player
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SquadPlayerInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadPlayer"
+    delete:
+      operationId: removeSquadPlayer
+      tags: [teams]
+      summary: Remove a player from squad
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /matches/{id}/lineup/auto:
+    post:
+      operationId: autoFillLineup
+      tags: [lineup]
+      summary: Auto-fill match lineup from both teams' squads
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lineup auto-filled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchLineup"
+
   /tournaments:
     get:
       operationId: listTournaments
@@ -1067,6 +1178,42 @@ components:
           type: string
         description:
           type: string
+
+    SquadPlayer:
+      type: object
+      required: [id, teamId, playerNumber, playerName, role, isStarting]
+      properties:
+        id:
+          type: integer
+        teamId:
+          type: integer
+        playerNumber:
+          type: string
+        playerName:
+          type: string
+        position:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [player, coach, captain]
+        isStarting:
+          type: boolean
+
+    SquadPlayerInput:
+      type: object
+      required: [playerName]
+      properties:
+        playerNumber:
+          type: string
+        playerName:
+          type: string
+        position:
+          type: string
+        role:
+          type: string
+          enum: [player, coach, captain]
+        isStarting:
+          type: boolean
 
     LineupPlayer:
       type: object

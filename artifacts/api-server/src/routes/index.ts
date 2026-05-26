@@ -9,10 +9,12 @@ import tournamentsRouter from "./tournaments";
 import eventsRouter from "./events";
 import lineupRouter from "./lineup";
 import adminAuthRouter from "./admin-auth";
+import squadRouter from "./squad";
 
 const router: IRouter = Router();
 
 router.use(adminAuthRouter);
+router.use(squadRouter);
 router.use(healthRouter);
 router.use(matchesRouter);
 router.use(teamsRouter);

@@ -342,6 +342,43 @@ export interface MatchEventInput {
   description?: string;
 }
 
+export type SquadPlayerRole = typeof SquadPlayerRole[keyof typeof SquadPlayerRole];
+
+
+export const SquadPlayerRole = {
+  player: 'player',
+  coach: 'coach',
+  captain: 'captain',
+} as const;
+
+export interface SquadPlayer {
+  id: number;
+  teamId: number;
+  playerNumber: string;
+  playerName: string;
+  /** @nullable */
+  position?: string | null;
+  role: SquadPlayerRole;
+  isStarting: boolean;
+}
+
+export type SquadPlayerInputRole = typeof SquadPlayerInputRole[keyof typeof SquadPlayerInputRole];
+
+
+export const SquadPlayerInputRole = {
+  player: 'player',
+  coach: 'coach',
+  captain: 'captain',
+} as const;
+
+export interface SquadPlayerInput {
+  playerNumber?: string;
+  playerName: string;
+  position?: string;
+  role?: SquadPlayerInputRole;
+  isStarting?: boolean;
+}
+
 export interface LineupPlayer {
   id: number;
   matchId: number;

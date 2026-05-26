@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { useListTeams, useCreateTeam, useDeleteTeam, getListTeamsQueryKey, Team } from "@workspace/api-client-react";
+import { useListTeams, useCreateTeam, useDeleteTeam, getListTeamsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trash2, Plus, X } from "lucide-react";
+import { Trash2, Plus, X, ChevronDown } from "lucide-react";
 import { TeamLogo } from "@/components/team-logo";
+import { SquadPanel } from "@/components/admin/squad-panel";
 import { cn } from "@/lib/utils";
 
 type Sport = "football" | "futsal";
-
 const EMPTY = { name: "", shortName: "", country: "", logoUrl: "", sport: "football" as Sport };
 
 export function TeamsTab() {
@@ -15,6 +15,7 @@ export function TeamsTab() {
   const [sport, setSport] = useState<"all" | Sport>("all");
   const [form, setForm] = useState({ ...EMPTY });
   const [showForm, setShowForm] = useState(false);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const { data: teams, isLoading } = useListTeams(sport === "all" ? undefined : { sport });
   const createTeam = useCreateTeam();
@@ -31,8 +32,8 @@ export function TeamsTab() {
   };
 
   const handleDelete = (id: number) => {
-    if (!confirm("Delete this team?")) return;
-    deleteTeam.mutate({ id }, { onSuccess: invalidate });
+    if (!confirm("Delete this team and all its squad data?")) return;
+    deleteTeam.mutate({ id }, { onSuccess: () => { if (expandedId === id) setExpandedId(null); invalidate(); } });
   };
 
   return (
@@ -54,7 +55,7 @@ export function TeamsTab() {
         </button>
       </div>
 
-      {/* Add form */}
+      {/* Add team form */}
       {showForm && (
         <form onSubmit={handleCreate} className="bg-card border border-border rounded-xl p-4 space-y-3">
           <p className="text-sm font-bold text-foreground">New Team</p>
@@ -98,17 +99,35 @@ export function TeamsTab() {
       {isLoading ? (
         <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-xl" />)}</div>
       ) : teams && teams.length > 0 ? (
-        <div className="bg-card rounded-xl border border-border overflow-hidden">
-          {teams.map((team, i) => (
-            <div key={team.id} className={cn("flex items-center gap-3 px-4 py-3", i > 0 && "border-t border-border/50")}>
-              <TeamLogo url={team.logoUrl} name={team.name} shortName={team.shortName} className="w-8 h-8 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">{team.name}</p>
-                <p className="text-xs text-muted-foreground">{team.shortName} · {team.country} · <span className="capitalize">{team.sport}</span></p>
+        <div className="space-y-2">
+          {teams.map(team => (
+            <div key={team.id} className="bg-card rounded-xl border border-border overflow-hidden">
+              {/* Team row */}
+              <div className="flex items-center gap-3 px-4 py-3">
+                <TeamLogo url={team.logoUrl} name={team.name} shortName={team.shortName} className="w-8 h-8 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{team.name}</p>
+                  <p className="text-xs text-muted-foreground">{team.shortName} · {team.country} · <span className="capitalize">{team.sport}</span></p>
+                </div>
+                <button
+                  onClick={() => setExpandedId(expandedId === team.id ? null : team.id)}
+                  className={cn("flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-xl border transition-all",
+                    expandedId === team.id
+                      ? "bg-primary text-white border-primary"
+                      : "bg-muted text-muted-foreground border-border hover:border-primary/40"
+                  )}>
+                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", expandedId === team.id && "rotate-180")} />
+                  Squad
+                </button>
+                <button onClick={() => handleDelete(team.id)} className="text-muted-foreground hover:text-red-400 transition-colors p-1 ml-1">
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
-              <button onClick={() => handleDelete(team.id)} className="text-muted-foreground hover:text-red-400 transition-colors p-1">
-                <Trash2 className="w-4 h-4" />
-              </button>
+
+              {/* Squad panel — expands inline */}
+              {expandedId === team.id && (
+                <SquadPanel teamId={team.id} teamName={team.name} />
+              )}
             </div>
           ))}
         </div>

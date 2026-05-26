@@ -1,12 +1,12 @@
 import { useState } from "react";
 import {
   useListMatches, useCreateMatch, useUpdateMatch, useDeleteMatch,
-  useListTeams, useListTournaments,
+  useListTeams, useListTournaments, useAutoFillLineup,
   getListMatchesQueryKey, Match
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trash2, Plus, X, Pencil, Check } from "lucide-react";
+import { Trash2, Plus, X, Pencil, Check, Users } from "lucide-react";
 import { TeamLogo } from "@/components/team-logo";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -35,12 +35,16 @@ export function MatchesTab() {
   const [editMatch, setEditMatch] = useState<Match | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
 
+  const [autoFillPending, setAutoFillPending] = useState<number | null>(null);
+  const [autoFillMsg, setAutoFillMsg] = useState<{ id: number; msg: string } | null>(null);
+
   const { data: matches, isLoading } = useListMatches(sport === "all" ? undefined : { sport });
   const { data: teams } = useListTeams();
   const { data: tournaments } = useListTournaments();
   const createMatch = useCreateMatch();
   const updateMatch = useUpdateMatch();
   const deleteMatch = useDeleteMatch();
+  const autoFill = useAutoFillLineup();
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getListMatchesQueryKey() });
 
@@ -76,6 +80,19 @@ export function MatchesTab() {
   const handleDelete = (id: number) => {
     if (!confirm("Delete this match?")) return;
     deleteMatch.mutate({ id }, { onSuccess: invalidate });
+  };
+
+  const handleAutoFill = (matchId: number) => {
+    setAutoFillPending(matchId);
+    autoFill.mutate({ id: matchId }, {
+      onSuccess: (data) => {
+        const total = (data.home?.length ?? 0) + (data.away?.length ?? 0);
+        setAutoFillMsg({ id: matchId, msg: `✓ ${total} players added to lineup` });
+        setTimeout(() => setAutoFillMsg(null), 3000);
+      },
+      onError: () => setAutoFillMsg({ id: matchId, msg: "Failed — make sure both teams have a squad." }),
+      onSettled: () => setAutoFillPending(null),
+    });
   };
 
   const teamName = (id: number) => teams?.find(t => t.id === id)?.name ?? id.toString();
@@ -189,6 +206,14 @@ export function MatchesTab() {
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-0.5">{m.competition} · {format(new Date(m.kickoffAt), "d MMM HH:mm")}</p>
                 </div>
+                <button
+                  onClick={() => handleAutoFill(m.id)}
+                  disabled={autoFillPending === m.id}
+                  title="Auto-fill lineup from squads"
+                  className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground hover:text-primary border border-border hover:border-primary/50 bg-muted/30 rounded-lg px-2 py-1 transition-all disabled:opacity-40">
+                  <Users className="w-3.5 h-3.5" />
+                  {autoFillPending === m.id ? "..." : "Auto"}
+                </button>
                 <button onClick={() => setEditMatch(editMatch?.id === m.id ? null : m)}
                   className="text-muted-foreground hover:text-primary p-1 transition-colors">
                   <Pencil className="w-4 h-4" />
@@ -197,6 +222,13 @@ export function MatchesTab() {
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
+
+              {/* Auto-fill feedback */}
+              {autoFillMsg?.id === m.id && (
+                <div className="border-t border-border/50 px-4 py-2 bg-muted/20 text-[10px] font-semibold text-muted-foreground">
+                  {autoFillMsg.msg}
+                </div>
+              )}
 
               {/* Inline edit panel */}
               {editMatch?.id === m.id && (

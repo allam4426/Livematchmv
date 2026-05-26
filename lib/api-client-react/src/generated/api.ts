@@ -41,6 +41,8 @@ import type {
   MatchInput,
   MatchLineup,
   MatchUpdate,
+  SquadPlayer,
+  SquadPlayerInput,
   StandingRow,
   StatsSummary,
   Stream,
@@ -732,6 +734,371 @@ export const useDeleteTeam = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteTeamMutationOptions(options));
+    }
+
+export const getGetTeamSquadUrl = (id: number,) => {
+
+
+
+
+  return `/api/teams/${id}/squad`
+}
+
+/**
+ * @summary Get a team's squad
+ */
+export const getTeamSquad = async (id: number, options?: RequestInit): Promise<SquadPlayer[]> => {
+
+  return customFetch<SquadPlayer[]>(getGetTeamSquadUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTeamSquadQueryKey = (id: number,) => {
+    return [
+    `/api/teams/${id}/squad`
+    ] as const;
+    }
+
+
+export const getGetTeamSquadQueryOptions = <TData = Awaited<ReturnType<typeof getTeamSquad>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamSquad>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTeamSquadQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTeamSquad>>> = ({ signal }) => getTeamSquad(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTeamSquad>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTeamSquadQueryResult = NonNullable<Awaited<ReturnType<typeof getTeamSquad>>>
+export type GetTeamSquadQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get a team's squad
+ */
+
+export function useGetTeamSquad<TData = Awaited<ReturnType<typeof getTeamSquad>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamSquad>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTeamSquadQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAddSquadPlayerUrl = (id: number,) => {
+
+
+
+
+  return `/api/teams/${id}/squad`
+}
+
+/**
+ * @summary Add a player to a team's squad
+ */
+export const addSquadPlayer = async (id: number,
+    squadPlayerInput: SquadPlayerInput, options?: RequestInit): Promise<SquadPlayer> => {
+
+  return customFetch<SquadPlayer>(getAddSquadPlayerUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      squadPlayerInput,)
+  }
+);}
+
+
+
+
+export const getAddSquadPlayerMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSquadPlayer>>, TError,{id: number;data: BodyType<SquadPlayerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addSquadPlayer>>, TError,{id: number;data: BodyType<SquadPlayerInput>}, TContext> => {
+
+const mutationKey = ['addSquadPlayer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addSquadPlayer>>, {id: number;data: BodyType<SquadPlayerInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addSquadPlayer(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddSquadPlayerMutationResult = NonNullable<Awaited<ReturnType<typeof addSquadPlayer>>>
+    export type AddSquadPlayerMutationBody = BodyType<SquadPlayerInput>
+    export type AddSquadPlayerMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add a player to a team's squad
+ */
+export const useAddSquadPlayer = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSquadPlayer>>, TError,{id: number;data: BodyType<SquadPlayerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addSquadPlayer>>,
+        TError,
+        {id: number;data: BodyType<SquadPlayerInput>},
+        TContext
+      > => {
+      return useMutation(getAddSquadPlayerMutationOptions(options));
+    }
+
+export const getUpdateSquadPlayerUrl = (id: number,
+    playerId: number,) => {
+
+
+
+
+  return `/api/teams/${id}/squad/${playerId}`
+}
+
+/**
+ * @summary Update a squad player
+ */
+export const updateSquadPlayer = async (id: number,
+    playerId: number,
+    squadPlayerInput: SquadPlayerInput, options?: RequestInit): Promise<SquadPlayer> => {
+
+  return customFetch<SquadPlayer>(getUpdateSquadPlayerUrl(id,playerId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      squadPlayerInput,)
+  }
+);}
+
+
+
+
+export const getUpdateSquadPlayerMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSquadPlayer>>, TError,{id: number;playerId: number;data: BodyType<SquadPlayerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSquadPlayer>>, TError,{id: number;playerId: number;data: BodyType<SquadPlayerInput>}, TContext> => {
+
+const mutationKey = ['updateSquadPlayer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSquadPlayer>>, {id: number;playerId: number;data: BodyType<SquadPlayerInput>}> = (props) => {
+          const {id,playerId,data} = props ?? {};
+
+          return  updateSquadPlayer(id,playerId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSquadPlayerMutationResult = NonNullable<Awaited<ReturnType<typeof updateSquadPlayer>>>
+    export type UpdateSquadPlayerMutationBody = BodyType<SquadPlayerInput>
+    export type UpdateSquadPlayerMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a squad player
+ */
+export const useUpdateSquadPlayer = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSquadPlayer>>, TError,{id: number;playerId: number;data: BodyType<SquadPlayerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSquadPlayer>>,
+        TError,
+        {id: number;playerId: number;data: BodyType<SquadPlayerInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateSquadPlayerMutationOptions(options));
+    }
+
+export const getRemoveSquadPlayerUrl = (id: number,
+    playerId: number,) => {
+
+
+
+
+  return `/api/teams/${id}/squad/${playerId}`
+}
+
+/**
+ * @summary Remove a player from squad
+ */
+export const removeSquadPlayer = async (id: number,
+    playerId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveSquadPlayerUrl(id,playerId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveSquadPlayerMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSquadPlayer>>, TError,{id: number;playerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeSquadPlayer>>, TError,{id: number;playerId: number}, TContext> => {
+
+const mutationKey = ['removeSquadPlayer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeSquadPlayer>>, {id: number;playerId: number}> = (props) => {
+          const {id,playerId} = props ?? {};
+
+          return  removeSquadPlayer(id,playerId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveSquadPlayerMutationResult = NonNullable<Awaited<ReturnType<typeof removeSquadPlayer>>>
+
+    export type RemoveSquadPlayerMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove a player from squad
+ */
+export const useRemoveSquadPlayer = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSquadPlayer>>, TError,{id: number;playerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeSquadPlayer>>,
+        TError,
+        {id: number;playerId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveSquadPlayerMutationOptions(options));
+    }
+
+export const getAutoFillLineupUrl = (id: number,) => {
+
+
+
+
+  return `/api/matches/${id}/lineup/auto`
+}
+
+/**
+ * @summary Auto-fill match lineup from both teams' squads
+ */
+export const autoFillLineup = async (id: number, options?: RequestInit): Promise<MatchLineup> => {
+
+  return customFetch<MatchLineup>(getAutoFillLineupUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAutoFillLineupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof autoFillLineup>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof autoFillLineup>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['autoFillLineup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof autoFillLineup>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  autoFillLineup(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AutoFillLineupMutationResult = NonNullable<Awaited<ReturnType<typeof autoFillLineup>>>
+
+    export type AutoFillLineupMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Auto-fill match lineup from both teams' squads
+ */
+export const useAutoFillLineup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof autoFillLineup>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof autoFillLineup>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAutoFillLineupMutationOptions(options));
     }
 
 export const getListTournamentsUrl = (params?: ListTournamentsParams,) => {

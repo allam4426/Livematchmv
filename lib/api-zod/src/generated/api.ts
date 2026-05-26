@@ -125,6 +125,107 @@ export const DeleteTeamParams = zod.object({
 
 
 /**
+ * @summary Get a team's squad
+ */
+export const GetTeamSquadParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetTeamSquadResponseItem = zod.object({
+  "id": zod.number(),
+  "teamId": zod.number(),
+  "playerNumber": zod.string(),
+  "playerName": zod.string(),
+  "position": zod.string().nullish(),
+  "role": zod.enum(['player', 'coach', 'captain']),
+  "isStarting": zod.boolean()
+})
+export const GetTeamSquadResponse = zod.array(GetTeamSquadResponseItem)
+
+
+/**
+ * @summary Add a player to a team's squad
+ */
+export const AddSquadPlayerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AddSquadPlayerBody = zod.object({
+  "playerNumber": zod.string().optional(),
+  "playerName": zod.string(),
+  "position": zod.string().optional(),
+  "role": zod.enum(['player', 'coach', 'captain']).optional(),
+  "isStarting": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Update a squad player
+ */
+export const UpdateSquadPlayerParams = zod.object({
+  "id": zod.coerce.number(),
+  "playerId": zod.coerce.number()
+})
+
+export const UpdateSquadPlayerBody = zod.object({
+  "playerNumber": zod.string().optional(),
+  "playerName": zod.string(),
+  "position": zod.string().optional(),
+  "role": zod.enum(['player', 'coach', 'captain']).optional(),
+  "isStarting": zod.boolean().optional()
+})
+
+export const UpdateSquadPlayerResponse = zod.object({
+  "id": zod.number(),
+  "teamId": zod.number(),
+  "playerNumber": zod.string(),
+  "playerName": zod.string(),
+  "position": zod.string().nullish(),
+  "role": zod.enum(['player', 'coach', 'captain']),
+  "isStarting": zod.boolean()
+})
+
+
+/**
+ * @summary Remove a player from squad
+ */
+export const RemoveSquadPlayerParams = zod.object({
+  "id": zod.coerce.number(),
+  "playerId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Auto-fill match lineup from both teams' squads
+ */
+export const AutoFillLineupParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AutoFillLineupResponse = zod.object({
+  "matchId": zod.number(),
+  "home": zod.array(zod.object({
+  "id": zod.number(),
+  "matchId": zod.number(),
+  "teamId": zod.number(),
+  "playerNumber": zod.string(),
+  "playerName": zod.string(),
+  "position": zod.string().nullish(),
+  "isStarting": zod.boolean()
+})),
+  "away": zod.array(zod.object({
+  "id": zod.number(),
+  "matchId": zod.number(),
+  "teamId": zod.number(),
+  "playerNumber": zod.string(),
+  "playerName": zod.string(),
+  "position": zod.string().nullish(),
+  "isStarting": zod.boolean()
+}))
+})
+
+
+/**
  * @summary List all tournaments
  */
 export const ListTournamentsQueryParams = zod.object({
