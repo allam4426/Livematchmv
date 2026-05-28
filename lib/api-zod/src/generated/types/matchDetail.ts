@@ -31,6 +31,8 @@ export interface MatchDetail {
   tournamentId?: number | null;
   /** @nullable */
   venue?: string | null;
+  /** @nullable */
+  matchGroup?: string | null;
   streams: Stream[];
   events: MatchEvent[];
 }

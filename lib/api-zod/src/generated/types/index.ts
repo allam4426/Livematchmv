@@ -47,6 +47,7 @@ export * from './squadPlayerInput';
 export * from './squadPlayerInputRole';
 export * from './squadPlayerRole';
 export * from './standingRow';
+export * from './standingRowFormGuideItem';
 export * from './statsSummary';
 export * from './stream';
 export * from './streamInput';

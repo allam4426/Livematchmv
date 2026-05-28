@@ -137,23 +137,37 @@ function computeStandings(matches: Array<{
   homeTeam: typeof teamsTable.$inferSelect;
   awayTeam: typeof teamsTable.$inferSelect;
 }>) {
+  type ResultChar = "W" | "D" | "L";
   const teamMap = new Map<number, {
     team: typeof teamsTable.$inferSelect;
     played: number; won: number; drawn: number; lost: number;
     goalsFor: number; goalsAgainst: number; points: number;
+    results: Array<{ date: string; result: ResultChar }>;
   }>();
 
-  for (const { match, homeTeam: ht, awayTeam: at } of matches) {
-    if (!teamMap.has(ht.id)) teamMap.set(ht.id, { team: ht, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 });
-    if (!teamMap.has(at.id)) teamMap.set(at.id, { team: at, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 });
+  const sorted = [...matches].sort((a, b) =>
+    new Date(a.match.kickoffAt).getTime() - new Date(b.match.kickoffAt).getTime()
+  );
+
+  for (const { match, homeTeam: ht, awayTeam: at } of sorted) {
+    if (!teamMap.has(ht.id)) teamMap.set(ht.id, { team: ht, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, results: [] });
+    if (!teamMap.has(at.id)) teamMap.set(at.id, { team: at, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0, results: [] });
     const h = teamMap.get(ht.id)!;
     const a = teamMap.get(at.id)!;
     h.played++; a.played++;
     h.goalsFor += match.homeScore; h.goalsAgainst += match.awayScore;
     a.goalsFor += match.awayScore; a.goalsAgainst += match.homeScore;
-    if (match.homeScore > match.awayScore) { h.won++; h.points += 3; a.lost++; }
-    else if (match.homeScore < match.awayScore) { a.won++; a.points += 3; h.lost++; }
-    else { h.drawn++; h.points++; a.drawn++; a.points++; }
+    const date = match.kickoffAt.toString();
+    if (match.homeScore > match.awayScore) {
+      h.won++; h.points += 3; a.lost++;
+      h.results.push({ date, result: "W" }); a.results.push({ date, result: "L" });
+    } else if (match.homeScore < match.awayScore) {
+      a.won++; a.points += 3; h.lost++;
+      a.results.push({ date, result: "W" }); h.results.push({ date, result: "L" });
+    } else {
+      h.drawn++; h.points++; a.drawn++; a.points++;
+      h.results.push({ date, result: "D" }); a.results.push({ date, result: "D" });
+    }
   }
 
   return Array.from(teamMap.values())
@@ -169,6 +183,7 @@ function computeStandings(matches: Array<{
       goalsAgainst: s.goalsAgainst,
       goalDifference: s.goalsFor - s.goalsAgainst,
       points: s.points,
+      formGuide: s.results.slice(-5).map(r => r.result),
     }));
 }
 

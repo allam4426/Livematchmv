@@ -5,6 +5,7 @@
  * FootballLive API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { StandingRowFormGuideItem } from './standingRowFormGuideItem';
 import type { Team } from './team';
 
 export interface StandingRow {
@@ -18,4 +19,5 @@ export interface StandingRow {
   goalsAgainst: number;
   goalDifference: number;
   points: number;
+  formGuide: StandingRowFormGuideItem[];
 }

@@ -201,6 +201,15 @@ export const TournamentStandingsFormat = {
   knockout: 'knockout',
 } as const;
 
+export type StandingRowFormGuideItem = typeof StandingRowFormGuideItem[keyof typeof StandingRowFormGuideItem];
+
+
+export const StandingRowFormGuideItem = {
+  W: 'W',
+  D: 'D',
+  L: 'L',
+} as const;
+
 export interface StandingRow {
   position: number;
   team: Team;
@@ -212,6 +221,7 @@ export interface StandingRow {
   goalsAgainst: number;
   goalDifference: number;
   points: number;
+  formGuide: StandingRowFormGuideItem[];
 }
 
 export type TournamentStandingsGroups = {[key: string]: StandingRow[]};
@@ -351,6 +361,8 @@ export interface MatchDetail {
   tournamentId?: number | null;
   /** @nullable */
   venue?: string | null;
+  /** @nullable */
+  matchGroup?: string | null;
   streams: Stream[];
   events: MatchEvent[];
 }

@@ -1069,7 +1069,7 @@ components:
 
     StandingRow:
       type: object
-      required: [position, team, played, won, drawn, lost, goalsFor, goalsAgainst, goalDifference, points]
+      required: [position, team, played, won, drawn, lost, goalsFor, goalsAgainst, goalDifference, points, formGuide]
       properties:
         position:
           type: integer
@@ -1091,6 +1091,11 @@ components:
           type: integer
         points:
           type: integer
+        formGuide:
+          type: array
+          items:
+            type: string
+            enum: [W, D, L]
 
     Match:
       type: object
@@ -1168,6 +1173,8 @@ components:
         tournamentId:
           type: ["integer", "null"]
         venue:
+          type: ["string", "null"]
+        matchGroup:
           type: ["string", "null"]
         streams:
           type: array

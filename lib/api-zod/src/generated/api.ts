@@ -405,7 +405,8 @@ export const GetTournamentStandingsResponse = zod.object({
   "goalsFor": zod.number(),
   "goalsAgainst": zod.number(),
   "goalDifference": zod.number(),
-  "points": zod.number()
+  "points": zod.number(),
+  "formGuide": zod.array(zod.enum(['W', 'D', 'L']))
 })))
 })
 
@@ -558,6 +559,7 @@ export const GetMatchResponse = zod.object({
   "sport": zod.enum(['football', 'futsal']),
   "tournamentId": zod.number().nullish(),
   "venue": zod.string().nullish(),
+  "matchGroup": zod.string().nullish(),
   "streams": zod.array(zod.object({
   "id": zod.number(),
   "matchId": zod.number(),
