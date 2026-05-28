@@ -44,11 +44,18 @@ function useMatchStopwatch(isRunning: boolean, matchId: number, initialMinute: s
     return () => clearInterval(id);
   }, [isRunning]);
 
+  const reset = (toMinute = 0) => {
+    const toSeconds = Math.max(0, toMinute) * 60;
+    initRef.current = toSeconds;
+    startWallRef.current = isRunning ? Date.now() - toSeconds * 1000 : null;
+    setElapsed(toSeconds);
+  };
+
   const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
   const ss = String(elapsed % 60).padStart(2, "0");
   const minuteNum = Math.floor(elapsed / 60) + 1;
 
-  return { mm, ss, minuteStr: String(minuteNum) };
+  return { mm, ss, minuteStr: String(minuteNum), reset };
 }
 
 /* ─── event log modal ─── */
@@ -277,6 +284,8 @@ export function EventsTab() {
   const [showLineup, setShowLineup] = useState(false);
   const [localScore, setLocalScore] = useState({ home: 0, away: 0 });
   const scoreDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showSetMinute, setShowSetMinute] = useState(false);
+  const [setMinuteInput, setSetMinuteInput] = useState("");
 
   const { data: allMatches } = useListMatches({ limit: 100 });
   const match = (allMatches ?? []).find(m => m.id === selectedMatchId);
@@ -309,11 +318,27 @@ export function EventsTab() {
   }, [match?.id, match?.homeScore, match?.awayScore]);
 
   // Stopwatch
-  const { mm, ss, minuteStr } = useMatchStopwatch(
+  const { mm, ss, minuteStr, reset: resetWatch } = useMatchStopwatch(
     isLive && !isHalfTime,
     selectedMatchId,
     match?.minute
   );
+
+  const handleResetWatch = () => {
+    resetWatch(0);
+    setShowSetMinute(false);
+    setSetMinuteInput("");
+  };
+
+  const handleSetMinute = () => {
+    const n = parseInt(setMinuteInput, 10);
+    if (!isNaN(n) && n >= 0) {
+      resetWatch(n);
+      updateMatch.mutate({ id: selectedMatchId, data: { minute: String(n) } });
+    }
+    setShowSetMinute(false);
+    setSetMinuteInput("");
+  };
 
   /* score control */
   const adjustScore = (side: "home" | "away", delta: number) => {
@@ -411,12 +436,51 @@ export function EventsTab() {
           {/* ── Live control panel ── */}
           <div className="bg-[#0f1929] border border-white/8 rounded-2xl overflow-hidden">
             {/* Stopwatch / status header */}
-            <div className="flex items-center justify-center pt-4 pb-1">
+            <div className="flex flex-col items-center pt-4 pb-1 px-4 gap-1.5">
               {isLive && !isHalfTime ? (
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <span className="font-mono text-xl font-black text-red-400 tracking-widest">{mm}:{ss}</span>
-                </div>
+                <>
+                  {showSetMinute ? (
+                    /* Set-minute input */
+                    <div className="flex items-center gap-2 w-full max-w-[220px]">
+                      <input
+                        autoFocus
+                        type="number"
+                        min="0"
+                        max="120"
+                        value={setMinuteInput}
+                        onChange={e => setSetMinuteInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") handleSetMinute(); if (e.key === "Escape") { setShowSetMinute(false); setSetMinuteInput(""); } }}
+                        placeholder="e.g. 45"
+                        className="flex-1 bg-white/10 border border-white/20 rounded-xl px-3 py-1.5 text-sm text-white text-center font-mono focus:outline-none focus:border-primary placeholder:text-white/30"
+                      />
+                      <button onClick={handleSetMinute}
+                        className="bg-primary text-white text-xs font-black px-3 py-1.5 rounded-xl">
+                        Set
+                      </button>
+                      <button onClick={() => { setShowSetMinute(false); setSetMinuteInput(""); }}
+                        className="text-white/40 hover:text-white/70 transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    /* Running stopwatch + controls */
+                    <div className="flex items-center gap-3">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                      <button
+                        onClick={() => { setShowSetMinute(true); setSetMinuteInput(""); }}
+                        className="font-mono text-xl font-black text-red-400 tracking-widest hover:text-red-300 transition-colors"
+                        title="Tap to set minute">
+                        {mm}:{ss}
+                      </button>
+                      <button
+                        onClick={handleResetWatch}
+                        title="Reset to 00:00"
+                        className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
+                        <RotateCcw className="w-3 h-3 text-white/50" />
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : isHalfTime ? (
                 <span className="text-sm font-black text-amber-400 tracking-widest uppercase">Half Time</span>
               ) : isFinished ? (
