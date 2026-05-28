@@ -1,257 +1,648 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   useListMatches, useListMatchEvents, useCreateMatchEvent, useDeleteMatchEvent,
-  useGetMatchLineup, getListMatchEventsQueryKey, getGetMatchLineupQueryKey
+  useUpdateMatch, useGetMatchLineup,
+  getListMatchEventsQueryKey, getGetMatchLineupQueryKey, getListMatchesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trash2, Plus, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2, RotateCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type EventType = "goal" | "yellow_card" | "red_card" | "own_goal" | "penalty_awarded" | "penalty_goal" | "penalty_missed" | "substitution" | "mvp";
+/* ─── types ─── */
+type EventType =
+  | "goal" | "yellow_card" | "red_card" | "own_goal"
+  | "penalty_awarded" | "penalty_goal" | "penalty_missed"
+  | "substitution" | "mvp";
 
-const EVENT_TYPES: { type: EventType; label: string; icon: string; color: string }[] = [
-  { type: "goal", label: "Goal", icon: "⚽", color: "bg-green-500/15 border-green-500/40 text-green-400" },
-  { type: "yellow_card", label: "Yellow", icon: "🟨", color: "bg-yellow-500/15 border-yellow-500/40 text-yellow-400" },
-  { type: "red_card", label: "Red", icon: "🟥", color: "bg-red-500/15 border-red-500/40 text-red-400" },
-  { type: "own_goal", label: "Own Goal", icon: "⚽↩", color: "bg-orange-500/15 border-orange-500/40 text-orange-400" },
-  { type: "penalty_awarded", label: "Penalty Awarded", icon: "P!", color: "bg-blue-500/15 border-blue-500/40 text-blue-400" },
-  { type: "penalty_goal", label: "Penalty Goal", icon: "P⚽", color: "bg-green-500/15 border-green-500/40 text-green-400" },
-  { type: "penalty_missed", label: "Missed", icon: "P✗", color: "bg-red-500/15 border-red-500/40 text-red-400" },
-  { type: "substitution", label: "Sub", icon: "↕", color: "bg-purple-500/15 border-purple-500/40 text-purple-400" },
-  { type: "mvp", label: "MVP", icon: "⭐", color: "bg-primary/15 border-primary/40 text-primary" },
-];
+/* ─── stopwatch ─── */
+function useMatchStopwatch(isRunning: boolean, matchId: number, initialMinute: string | null | undefined) {
+  const initRef = useRef(0);
+  const startWallRef = useRef<number | null>(null);
+  const [elapsed, setElapsed] = useState(0);
 
-const EVENT_ICONS: Record<string, string> = Object.fromEntries(EVENT_TYPES.map(e => [e.type, e.icon]));
+  // Re-initialize when match changes
+  useEffect(() => {
+    const n = initialMinute ? parseInt(initialMinute, 10) : 0;
+    const init = isNaN(n) ? 0 : Math.max(0, n - 1) * 60;
+    initRef.current = init;
+    setElapsed(init);
+    startWallRef.current = null;
+  }, [matchId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-const EMPTY_EVENT = { type: "goal" as EventType, minute: "", teamSide: "home" as "home" | "away", playerName: "", playerNumber: "", assistPlayerName: "", description: "", useLineup: false, lineupPlayerId: 0 };
+  useEffect(() => {
+    if (!isRunning) {
+      startWallRef.current = null;
+      return;
+    }
+    if (startWallRef.current === null) {
+      startWallRef.current = Date.now() - initRef.current * 1000;
+    }
+    const id = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startWallRef.current!) / 1000));
+    }, 500);
+    return () => clearInterval(id);
+  }, [isRunning]);
 
+  const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
+  const ss = String(elapsed % 60).padStart(2, "0");
+  const minuteNum = Math.floor(elapsed / 60) + 1;
+
+  return { mm, ss, minuteStr: String(minuteNum) };
+}
+
+/* ─── event log modal ─── */
+type ModalState = {
+  type: EventType;
+  label: string;
+};
+
+const EVENT_ICON_MAP: Record<string, string> = {
+  goal: "⚽", yellow_card: "🟨", red_card: "🟥", own_goal: "↩⚽",
+  penalty_awarded: "P!", penalty_goal: "P⚽", penalty_missed: "P✗",
+  substitution: "↕", mvp: "⭐",
+};
+
+function EventModal({
+  modal, match, lineup, defaultMinute, onClose, onSubmit, isPending,
+}: {
+  modal: ModalState;
+  match: { homeTeam: { id: number; shortName: string | null; name: string }; awayTeam: { id: number; shortName: string | null; name: string } };
+  lineup: { home: { id: number; playerName: string; playerNumber: string; position?: string | null }[]; away: { id: number; playerName: string; playerNumber: string; position?: string | null }[] } | undefined;
+  defaultMinute: string;
+  onClose: () => void;
+  onSubmit: (data: { type: EventType; minute: string; teamId: number; playerName: string; playerNumber?: string; assistPlayerName?: string; description?: string }) => void;
+  isPending: boolean;
+}) {
+  const isMvp = modal.type === "mvp";
+  const isCommentary = modal.type === "penalty_awarded"; // reuse for commentary edge cases
+  const isGoal = modal.type === "goal" || modal.type === "penalty_goal";
+  const isSub = modal.type === "substitution";
+
+  const [teamSide, setTeamSide] = useState<"home" | "away">("home");
+  const [minute, setMinute] = useState(defaultMinute);
+  const [useLineup, setUseLineup] = useState(true);
+  const [lineupId, setLineupId] = useState(0);
+  const [playerName, setPlayerName] = useState("");
+  const [playerNumber, setPlayerNumber] = useState("");
+  const [assist, setAssist] = useState("");
+  const [description, setDescription] = useState("");
+  const [subOutId, setSubOutId] = useState(0);
+  const [subOutName, setSubOutName] = useState("");
+
+  const lineupSide = teamSide === "home" ? (lineup?.home ?? []) : (lineup?.away ?? []);
+  const hasLineup = lineupSide.length > 0;
+  const teamId = teamSide === "home" ? match.homeTeam.id : match.awayTeam.id;
+
+  const pickPlayer = (id: number) => {
+    const p = lineupSide.find(x => x.id === id);
+    if (p) { setLineupId(id); setPlayerName(p.playerName); setPlayerNumber(p.playerNumber); }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const finalPlayerName = isMvp ? playerName : playerName;
+    if (!finalPlayerName && modal.type !== "penalty_awarded") return;
+
+    const descParts: string[] = [];
+    if (isSub && subOutName) descParts.push(`Out: ${subOutName}`);
+    if (description) descParts.push(description);
+
+    onSubmit({
+      type: modal.type,
+      minute: isMvp ? "90" : minute,
+      teamId,
+      playerName: finalPlayerName || "Unknown",
+      playerNumber: playerNumber || undefined,
+      assistPlayerName: assist || undefined,
+      description: descParts.join(" · ") || undefined,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="w-full max-w-md bg-[#0f1929] border border-white/10 rounded-t-3xl px-5 pb-8 pt-5 shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">{EVENT_ICON_MAP[modal.type] ?? "•"}</span>
+            <span className="text-base font-black text-white">{isMvp ? "Set Man of the Match" : `Log ${modal.label}`}</span>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+            <X className="w-4 h-4 text-white/70" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {/* Team selector */}
+          <div className="grid grid-cols-2 gap-2">
+            {(["home", "away"] as const).map(side => (
+              <button key={side} type="button"
+                onClick={() => { setTeamSide(side); setLineupId(0); setPlayerName(""); setPlayerNumber(""); }}
+                className={cn("py-2.5 rounded-xl text-sm font-bold border transition-all",
+                  teamSide === side
+                    ? "bg-primary text-white border-primary"
+                    : "bg-white/5 text-white/60 border-white/10"
+                )}>
+                {side === "home"
+                  ? (match.homeTeam.shortName || match.homeTeam.name)
+                  : (match.awayTeam.shortName || match.awayTeam.name)}
+              </button>
+            ))}
+          </div>
+
+          {/* Player */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[10px] font-bold text-white/50 uppercase">
+                {isSub ? "Player In *" : isMvp ? "Player *" : "Player *"}
+              </label>
+              {hasLineup && (
+                <button type="button" onClick={() => { setUseLineup(u => !u); setLineupId(0); setPlayerName(""); setPlayerNumber(""); }}
+                  className="text-[10px] font-semibold text-primary">
+                  {useLineup ? "Manual" : "From lineup"}
+                </button>
+              )}
+            </div>
+            {useLineup && hasLineup ? (
+              <select value={lineupId}
+                onChange={e => pickPlayer(Number(e.target.value))}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-primary">
+                <option value={0}>— Select player —</option>
+                {lineupSide.map(p => (
+                  <option key={p.id} value={p.id}>#{p.playerNumber} {p.playerName}{p.position ? ` (${p.position})` : ""}</option>
+                ))}
+              </select>
+            ) : (
+              <div className="flex gap-2">
+                <input value={playerNumber} onChange={e => setPlayerNumber(e.target.value)}
+                  placeholder="#" className="w-16 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white text-center focus:outline-none focus:border-primary" />
+                <input value={playerName} onChange={e => setPlayerName(e.target.value)}
+                  placeholder="Player name" required
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary" />
+              </div>
+            )}
+          </div>
+
+          {/* Sub-out player */}
+          {isSub && (
+            <div>
+              <label className="text-[10px] font-bold text-white/50 uppercase block mb-1.5">Player Out</label>
+              {useLineup && hasLineup ? (
+                <select value={subOutId}
+                  onChange={e => { const p = lineupSide.find(x => x.id === Number(e.target.value)); setSubOutId(Number(e.target.value)); setSubOutName(p?.playerName ?? ""); }}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-primary">
+                  <option value={0}>— Select player —</option>
+                  {lineupSide.map(p => (
+                    <option key={p.id} value={p.id}>#{p.playerNumber} {p.playerName}</option>
+                  ))}
+                </select>
+              ) : (
+                <input value={subOutName} onChange={e => setSubOutName(e.target.value)}
+                  placeholder="Player being substituted out"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary" />
+              )}
+            </div>
+          )}
+
+          {/* Assist (for goals) */}
+          {isGoal && (
+            <div>
+              <label className="text-[10px] font-bold text-white/50 uppercase block mb-1.5">Assist (optional)</label>
+              <input value={assist} onChange={e => setAssist(e.target.value)}
+                placeholder="Assist player name"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary" />
+            </div>
+          )}
+
+          {/* Note */}
+          <div>
+            <label className="text-[10px] font-bold text-white/50 uppercase block mb-1.5">Note (optional)</label>
+            <input value={description} onChange={e => setDescription(e.target.value)}
+              placeholder="e.g. VAR, header, free kick..."
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary" />
+          </div>
+
+          {/* Minute (not for MVP) */}
+          {!isMvp && (
+            <div>
+              <label className="text-[10px] font-bold text-white/50 uppercase block mb-1.5">Minute</label>
+              <input value={minute} onChange={e => setMinute(e.target.value)}
+                placeholder="45' or 90+3'"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary" />
+            </div>
+          )}
+
+          <button type="submit" disabled={isPending}
+            className="w-full bg-primary text-white font-black py-3.5 rounded-2xl text-sm mt-2 disabled:opacity-50 active:scale-[0.98] transition-transform">
+            {isPending ? "Logging..." : isMvp ? "⭐ Set Man of the Match" : `Log ${modal.label}`}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ─── score button ─── */
+function ScoreBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick}
+      className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition-all flex items-center justify-center text-white font-black text-lg leading-none">
+      {children}
+    </button>
+  );
+}
+
+/* ─── log icon ─── */
+const LOG_ICONS: Record<string, { icon: string; label: string; color: string }> = {
+  goal:             { icon: "⚽", label: "Goal", color: "text-emerald-400" },
+  yellow_card:      { icon: "🟨", label: "Yellow", color: "text-yellow-400" },
+  red_card:         { icon: "🟥", label: "Red Card", color: "text-red-400" },
+  own_goal:         { icon: "↩⚽", label: "Own Goal", color: "text-orange-400" },
+  penalty_awarded:  { icon: "P!", label: "Penalty", color: "text-blue-400" },
+  penalty_goal:     { icon: "P⚽", label: "Pen. Goal", color: "text-emerald-400" },
+  penalty_missed:   { icon: "P✗", label: "Pen. Miss", color: "text-red-400" },
+  substitution:     { icon: "↕", label: "Sub", color: "text-purple-400" },
+  mvp:              { icon: "⭐", label: "MVP", color: "text-amber-400" },
+};
+
+/* ─── main component ─── */
 export function EventsTab() {
   const qc = useQueryClient();
-  const [selectedMatchId, setSelectedMatchId] = useState<number>(0);
-  const [showForm, setShowForm] = useState(false);
-  const [ev, setEv] = useState({ ...EMPTY_EVENT });
 
-  const { data: matches } = useListMatches({ status: "live", limit: 50 });
-  const allMatches = useListMatches({ limit: 100 });
+  const [selectedMatchId, setSelectedMatchId] = useState(0);
+  const [modal, setModal] = useState<ModalState | null>(null);
+  const [showLog, setShowLog] = useState(true);
+  const [showLineup, setShowLineup] = useState(false);
+  const [localScore, setLocalScore] = useState({ home: 0, away: 0 });
+  const scoreDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const match = (allMatches.data ?? []).find(m => m.id === selectedMatchId);
+  const { data: allMatches } = useListMatches({ limit: 100 });
+  const match = (allMatches ?? []).find(m => m.id === selectedMatchId);
+  const isLive = match?.status === "live";
+  const isFinished = match?.status === "finished";
+  const isHalfTime = match?.minute === "HT";
 
   const { data: events, isLoading: evLoading } = useListMatchEvents(selectedMatchId, {
-    query: { enabled: !!selectedMatchId, queryKey: getListMatchEventsQueryKey(selectedMatchId) }
+    query: { enabled: !!selectedMatchId, queryKey: getListMatchEventsQueryKey(selectedMatchId), refetchInterval: isLive ? 15000 : false },
   });
-
   const { data: lineup } = useGetMatchLineup(selectedMatchId, {
-    query: { enabled: !!selectedMatchId, queryKey: getGetMatchLineupQueryKey(selectedMatchId) }
+    query: { enabled: !!selectedMatchId, queryKey: getGetMatchLineupQueryKey(selectedMatchId) },
   });
 
   const createEvent = useCreateMatchEvent();
   const deleteEvent = useDeleteMatchEvent();
+  const updateMatch = useUpdateMatch();
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: getListMatchEventsQueryKey(selectedMatchId) });
+  const invalidateEvents = useCallback(() =>
+    qc.invalidateQueries({ queryKey: getListMatchEventsQueryKey(selectedMatchId) }),
+    [qc, selectedMatchId]);
 
-  const teamId = ev.teamSide === "home" ? match?.homeTeam.id : match?.awayTeam.id;
-  const lineupSide = ev.teamSide === "home" ? lineup?.home : lineup?.away;
+  const invalidateMatches = useCallback(() =>
+    qc.invalidateQueries({ queryKey: getListMatchesQueryKey() }),
+    [qc]);
 
-  const handlePlayerSelect = (playerId: number) => {
-    const player = lineupSide?.find(p => p.id === playerId);
-    if (player) {
-      setEv(e => ({ ...e, lineupPlayerId: playerId, playerName: player.playerName, playerNumber: player.playerNumber }));
-    }
+  // Initialize local score from match data
+  useEffect(() => {
+    if (match) setLocalScore({ home: match.homeScore ?? 0, away: match.awayScore ?? 0 });
+  }, [match?.id, match?.homeScore, match?.awayScore]);
+
+  // Stopwatch
+  const { mm, ss, minuteStr } = useMatchStopwatch(
+    isLive && !isHalfTime,
+    selectedMatchId,
+    match?.minute
+  );
+
+  /* score control */
+  const adjustScore = (side: "home" | "away", delta: number) => {
+    const next = { ...localScore, [side]: Math.max(0, localScore[side] + delta) };
+    setLocalScore(next);
+    if (scoreDebounceRef.current) clearTimeout(scoreDebounceRef.current);
+    scoreDebounceRef.current = setTimeout(() => {
+      updateMatch.mutate({ id: selectedMatchId, data: { homeScore: next.home, awayScore: next.away } },
+        { onSuccess: invalidateMatches });
+    }, 400);
   };
 
-  const handleAdd = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedMatchId || !ev.type || !ev.minute || !ev.playerName || !teamId) return;
-    createEvent.mutate({
+  /* status controls */
+  const handleHalfTime = () => {
+    updateMatch.mutate({ id: selectedMatchId, data: { status: "live", minute: "HT" } },
+      { onSuccess: invalidateMatches });
+  };
+
+  const handleSecondHalf = () => {
+    updateMatch.mutate({ id: selectedMatchId, data: { status: "live", minute: "46" } },
+      { onSuccess: invalidateMatches });
+  };
+
+  const handleFullTime = () => {
+    updateMatch.mutate({
       id: selectedMatchId,
-      data: {
-        type: ev.type,
-        minute: ev.minute,
-        teamId,
-        playerName: ev.playerName,
-        playerNumber: ev.playerNumber || undefined,
-        assistPlayerName: ev.assistPlayerName || undefined,
-        description: ev.description || undefined,
-      }
-    }, { onSuccess: () => { setEv({ ...EMPTY_EVENT }); setShowForm(false); invalidate(); } });
+      data: { status: "finished", minute: minuteStr, homeScore: localScore.home, awayScore: localScore.away }
+    }, { onSuccess: invalidateMatches });
   };
 
-  const handleDelete = (eventId: number) => {
-    deleteEvent.mutate({ id: selectedMatchId, eventId }, { onSuccess: invalidate });
+  const handleRestart = () => {
+    updateMatch.mutate({ id: selectedMatchId, data: { status: "live", minute: "1" } },
+      { onSuccess: invalidateMatches });
   };
+
+  /* log event */
+  const handleLogEvent = (data: Parameters<typeof createEvent.mutate>[0]["data"]) => {
+    createEvent.mutate({ id: selectedMatchId, data }, {
+      onSuccess: () => {
+        setModal(null);
+        invalidateEvents();
+        invalidateMatches();
+      }
+    });
+  };
+
+  const handleDelete = (eventId: number) =>
+    deleteEvent.mutate({ id: selectedMatchId, eventId }, { onSuccess: invalidateEvents });
+
+  /* event tile config */
+  const EVENT_TILES: { type: EventType; label: string; bg: string; icon: string }[] = [
+    { type: "goal",        label: "Goal",         bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "⚽" },
+    { type: "yellow_card", label: "Yellow Card",   bg: "bg-[#7a5800] hover:bg-[#8f6600]", icon: "🟨" },
+    { type: "red_card",    label: "Red Card",      bg: "bg-[#6b1111] hover:bg-[#801313]", icon: "🟥" },
+    { type: "substitution",label: "Substitution",  bg: "bg-[#0d3060] hover:bg-[#104080]", icon: "🔄" },
+    { type: "own_goal",    label: "Own Goal",      bg: "bg-[#5a2d00] hover:bg-[#6e3700]", icon: "↩⚽" },
+    { type: "penalty_goal",label: "Penalty",       bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "P⚽" },
+  ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Match selector */}
       <div>
         <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1.5">Select Match</label>
-        <select value={selectedMatchId} onChange={e => { setSelectedMatchId(Number(e.target.value)); setShowForm(false); }} className="admin-input">
+        <select value={selectedMatchId}
+          onChange={e => { setSelectedMatchId(Number(e.target.value)); setModal(null); }}
+          className="admin-input">
           <option value={0}>— Choose match —</option>
-          {(allMatches.data ?? []).map(m => (
-            <option key={m.id} value={m.id}>
-              {m.homeTeam.shortName} vs {m.awayTeam.shortName} · {m.competition} · {m.status === "live" ? `LIVE ${m.minute ?? ""}` : m.status}
-            </option>
-          ))}
+          <optgroup label="Live">
+            {(allMatches ?? []).filter(m => m.status === "live").map(m => (
+              <option key={m.id} value={m.id}>
+                🔴 {m.homeTeam.shortName} vs {m.awayTeam.shortName} · {m.competition} · {m.minute ?? "Live"}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="Scheduled">
+            {(allMatches ?? []).filter(m => m.status === "scheduled").map(m => (
+              <option key={m.id} value={m.id}>
+                {m.homeTeam.shortName} vs {m.awayTeam.shortName} · {m.competition}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="Finished">
+            {(allMatches ?? []).filter(m => m.status === "finished").map(m => (
+              <option key={m.id} value={m.id}>
+                ✓ {m.homeTeam.shortName} {m.homeScore}–{m.awayScore} {m.awayTeam.shortName}
+              </option>
+            ))}
+          </optgroup>
         </select>
       </div>
 
-      {selectedMatchId > 0 && (
+      {selectedMatchId > 0 && match && (
         <>
-          {/* Match info bar */}
-          {match && (
-            <div className="bg-card rounded-xl border border-border px-4 py-3 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-bold text-foreground">{match.homeTeam.shortName} {match.homeScore} – {match.awayScore} {match.awayTeam.shortName}</p>
-                <p className="text-xs text-muted-foreground">{match.competition}</p>
-              </div>
-              <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full border",
-                match.status === "live" ? "text-red-400 bg-red-500/10 border-red-500/25" : "text-muted-foreground bg-muted/50 border-border"
-              )}>
-                {match.status === "live" ? `Live · ${match.minute ?? ""}` : match.status}
-              </span>
+          {/* ── Live control panel ── */}
+          <div className="bg-[#0f1929] border border-white/8 rounded-2xl overflow-hidden">
+            {/* Stopwatch / status header */}
+            <div className="flex items-center justify-center pt-4 pb-1">
+              {isLive && !isHalfTime ? (
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="font-mono text-xl font-black text-red-400 tracking-widest">{mm}:{ss}</span>
+                </div>
+              ) : isHalfTime ? (
+                <span className="text-sm font-black text-amber-400 tracking-widest uppercase">Half Time</span>
+              ) : isFinished ? (
+                <span className="text-sm font-black text-muted-foreground tracking-widest uppercase">Full Time</span>
+              ) : (
+                <span className="text-sm font-black text-blue-400 tracking-widest uppercase">Scheduled</span>
+              )}
             </div>
-          )}
 
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Match Log ({events?.length ?? 0})</p>
-            <button onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-1.5 bg-primary text-white rounded-xl px-3 py-2 text-xs font-bold">
-              {showForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-              {showForm ? "Cancel" : "Add Event"}
-            </button>
+            {/* Score display */}
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between mb-2 px-2">
+                <span className="text-xs font-bold text-white/50 tracking-wider uppercase">
+                  {match.homeTeam.shortName || match.homeTeam.name}
+                </span>
+                <span className="text-xs text-white/30">—</span>
+                <span className="text-xs font-bold text-white/50 tracking-wider uppercase">
+                  {match.awayTeam.shortName || match.awayTeam.name}
+                </span>
+              </div>
+              <div className="flex items-center justify-center gap-6">
+                {/* Home */}
+                <div className="flex items-center gap-3">
+                  <ScoreBtn onClick={() => adjustScore("home", -1)}>−</ScoreBtn>
+                  <span className="text-5xl font-black text-white w-12 text-center tabular-nums">{localScore.home}</span>
+                  <ScoreBtn onClick={() => adjustScore("home", 1)}>+</ScoreBtn>
+                </div>
+                <span className="text-3xl font-black text-white/30">—</span>
+                {/* Away */}
+                <div className="flex items-center gap-3">
+                  <ScoreBtn onClick={() => adjustScore("away", -1)}>−</ScoreBtn>
+                  <span className="text-5xl font-black text-white w-12 text-center tabular-nums">{localScore.away}</span>
+                  <ScoreBtn onClick={() => adjustScore("away", 1)}>+</ScoreBtn>
+                </div>
+              </div>
+            </div>
+
+            {/* Status buttons */}
+            <div className="px-4 pb-4">
+              {isFinished ? (
+                <button onClick={handleRestart}
+                  className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98]">
+                  <RotateCcw className="w-4 h-4" />
+                  Restart Match
+                </button>
+              ) : isHalfTime ? (
+                <button onClick={handleSecondHalf}
+                  className="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98]">
+                  2nd Half Started
+                </button>
+              ) : isLive ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={handleHalfTime}
+                    className="bg-[#1a3a4a] hover:bg-[#1f4455] text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5">
+                    <span className="text-base">⏸</span> Half Time
+                  </button>
+                  <button onClick={handleFullTime}
+                    className="bg-primary hover:bg-primary/90 text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5">
+                    <span className="text-base">⏹</span> Full Time
+                  </button>
+                </div>
+              ) : (
+                <button onClick={handleRestart}
+                  className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98]">
+                  ▶ Start Live
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Add event form */}
-          {showForm && match && (
-            <form onSubmit={handleAdd} className="bg-card border border-border rounded-xl p-4 space-y-4">
-              {/* Event type picker */}
-              <div>
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-2">Event Type *</label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {EVENT_TYPES.map(et => (
-                    <button key={et.type} type="button"
-                      onClick={() => setEv(e => ({ ...e, type: et.type }))}
-                      className={cn("rounded-xl border py-2 px-1.5 text-center transition-all",
-                        ev.type === et.type ? et.color + " border-current" : "bg-muted/30 border-border text-muted-foreground hover:border-primary/30"
-                      )}>
-                      <div className="text-base leading-none mb-0.5">{et.icon}</div>
-                      <div className="text-[9px] font-semibold leading-tight">{et.label}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
+          {/* ── LOG EVENT ── */}
+          <div className="bg-[#0f1929] border border-white/8 rounded-2xl p-4">
+            <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-3">Log Event</p>
+            <div className="grid grid-cols-2 gap-2">
+              {EVENT_TILES.map(tile => (
+                <button key={tile.type}
+                  onClick={() => setModal({ type: tile.type, label: tile.label })}
+                  className={cn(
+                    "rounded-2xl py-4 px-3 flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 border border-white/5",
+                    tile.bg
+                  )}>
+                  <span className="text-2xl leading-none">{tile.icon}</span>
+                  <span className="text-xs font-black text-white tracking-wide">{tile.label}</span>
+                </button>
+              ))}
 
-              <div className="grid grid-cols-2 gap-2">
-                {/* Minute */}
-                <div>
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Minute *</label>
-                  <input value={ev.minute} onChange={e => setEv(v => ({ ...v, minute: e.target.value }))}
-                    placeholder="45' or 90+3'" className="admin-input" />
-                </div>
+              {/* Commentary */}
+              <button
+                onClick={() => setModal({ type: "penalty_awarded", label: "Commentary" })}
+                className="rounded-2xl py-4 px-3 flex flex-col items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95">
+                <span className="text-2xl leading-none">💬</span>
+                <span className="text-xs font-black text-white tracking-wide">Commentary</span>
+              </button>
 
-                {/* Team side */}
-                <div>
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Team *</label>
-                  <div className="flex gap-1.5">
-                    {(["home", "away"] as const).map(side => (
-                      <button key={side} type="button"
-                        onClick={() => setEv(e => ({ ...e, teamSide: side, lineupPlayerId: 0, playerName: "", playerNumber: "" }))}
-                        className={cn("flex-1 rounded-xl border py-2 text-xs font-bold capitalize transition-all",
-                          ev.teamSide === side ? "bg-primary text-white border-primary" : "bg-muted text-muted-foreground border-border"
-                        )}>
-                        {side === "home" ? match.homeTeam.shortName : match.awayTeam.shortName}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Player selection */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase">Player *</label>
-                  <button type="button" onClick={() => setEv(e => ({ ...e, useLineup: !e.useLineup, lineupPlayerId: 0, playerName: "", playerNumber: "" }))}
-                    className="text-[10px] font-semibold text-primary">
-                    {ev.useLineup ? "Manual entry" : (lineupSide?.length ? "Choose from lineup" : "No lineup set")}
-                  </button>
-                </div>
-                {ev.useLineup && lineupSide && lineupSide.length > 0 ? (
-                  <select value={ev.lineupPlayerId} onChange={e => handlePlayerSelect(Number(e.target.value))} className="admin-input">
-                    <option value={0}>— Select player —</option>
-                    {lineupSide.map(p => (
-                      <option key={p.id} value={p.id}>#{p.playerNumber} {p.playerName}{p.position ? ` (${p.position})` : ""}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-1">
-                      <input value={ev.playerNumber} onChange={e => setEv(v => ({ ...v, playerNumber: e.target.value }))}
-                        placeholder="#" className="admin-input text-center" />
-                    </div>
-                    <div className="col-span-2">
-                      <input value={ev.playerName} onChange={e => setEv(v => ({ ...v, playerName: e.target.value }))}
-                        placeholder="Player name" className="admin-input" />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Assist (for goal types) */}
-              {(ev.type === "goal" || ev.type === "penalty_goal") && (
-                <div>
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Assist Player</label>
-                  <input value={ev.assistPlayerName} onChange={e => setEv(v => ({ ...v, assistPlayerName: e.target.value }))}
-                    placeholder="Assist player name (optional)" className="admin-input" />
+              {/* Set MVP — only when finished */}
+              {isFinished ? (
+                <button
+                  onClick={() => setModal({ type: "mvp", label: "Man of the Match" })}
+                  className="rounded-2xl py-4 px-3 flex flex-col items-center justify-center gap-1.5 bg-[#5a3a00] hover:bg-[#6e4500] border border-amber-500/20 transition-all active:scale-95">
+                  <span className="text-2xl leading-none">⭐</span>
+                  <span className="text-xs font-black text-amber-400 tracking-wide">Set MVP</span>
+                </button>
+              ) : (
+                <div className="rounded-2xl py-4 px-3 flex flex-col items-center justify-center gap-1.5 border border-dashed border-white/10 opacity-30">
+                  <span className="text-2xl leading-none">⭐</span>
+                  <span className="text-xs font-black text-white/40 tracking-wide">MVP (after FT)</span>
                 </div>
               )}
+            </div>
+          </div>
 
-              {/* Description */}
-              <div>
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Note (optional)</label>
-                <input value={ev.description} onChange={e => setEv(v => ({ ...v, description: e.target.value }))}
-                  placeholder="e.g. VAR reviewed, contested tackle..." className="admin-input" />
+          {/* ── MATCH LOG collapsible ── */}
+          <div className="bg-[#0f1929] border border-white/8 rounded-2xl overflow-hidden">
+            <button
+              onClick={() => setShowLog(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3.5">
+              <div className="flex items-center gap-2">
+                <span className="text-sm">📋</span>
+                <span className="text-sm font-black text-white tracking-wide">Match Log</span>
+                <span className="text-xs font-semibold text-white/40">({events?.length ?? 0})</span>
               </div>
-
-              <button type="submit" disabled={createEvent.isPending}
-                className="w-full bg-primary text-white rounded-xl py-2.5 text-sm font-bold disabled:opacity-50">
-                {createEvent.isPending ? "Logging..." : "Log Event"}
-              </button>
-            </form>
-          )}
-
-          {/* Events list */}
-          {evLoading ? (
-            <Skeleton className="h-32 w-full rounded-xl" />
-          ) : events && events.length > 0 ? (
-            <div className="bg-card rounded-xl border border-border overflow-hidden">
-              {events.map((event, i) => (
-                <div key={event.id} className={cn("flex items-center gap-3 px-4 py-3", i > 0 && "border-t border-border/50")}>
-                  <span className="text-xs font-black text-primary w-10 shrink-0">{event.minute}'</span>
-                  <span className="text-base shrink-0">{EVENT_ICONS[event.type] ?? "•"}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground">
-                      {event.playerNumber && <span className="text-muted-foreground mr-1">#{event.playerNumber}</span>}
-                      {event.playerName}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground capitalize">
-                      {event.type.replace(/_/g, " ")}
-                      {event.assistPlayerName && ` · Assist: ${event.assistPlayerName}`}
-                      {event.description && ` · ${event.description}`}
-                    </p>
+              {showLog ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
+            </button>
+            {showLog && (
+              <div className="border-t border-white/5">
+                {evLoading ? (
+                  <div className="p-4"><Skeleton className="h-16 w-full rounded-xl" /></div>
+                ) : events && events.length > 0 ? (
+                  <div className="divide-y divide-white/5">
+                    {[...events].reverse().map(event => {
+                      const info = LOG_ICONS[event.type];
+                      return (
+                        <div key={event.id} className="flex items-center gap-3 px-4 py-3">
+                          <span className="text-base w-6 text-center shrink-0">{info?.icon ?? "•"}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-white leading-tight">
+                              {event.playerNumber && <span className="text-white/40 mr-1">#{event.playerNumber}</span>}
+                              {event.playerName}
+                              {event.assistPlayerName && <span className="text-white/40 text-xs ml-1">▷ {event.assistPlayerName}</span>}
+                            </p>
+                            <p className="text-[10px] text-white/40 mt-0.5">
+                              <span className={cn("font-black mr-1.5", info?.color ?? "text-white/50")}>{event.minute}'</span>
+                              {info?.label ?? event.type}
+                              {event.description && ` · ${event.description}`}
+                            </p>
+                          </div>
+                          <button onClick={() => handleDelete(event.id)}
+                            className="text-white/20 hover:text-red-400 p-1 transition-colors shrink-0">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <button onClick={() => handleDelete(event.id)} className="text-muted-foreground hover:text-red-400 p-1 transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="py-8 text-center text-muted-foreground text-sm bg-card rounded-xl border border-dashed border-border">
-              No events logged yet. Use the form above to add match events.
-            </div>
-          )}
+                ) : (
+                  <p className="px-4 py-4 text-xs text-white/30 text-center">No logs yet. Events and goals will appear here.</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── LINEUP collapsible ── */}
+          <div className="bg-[#0f1929] border border-white/8 rounded-2xl overflow-hidden">
+            <button
+              onClick={() => setShowLineup(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3.5">
+              <div className="flex items-center gap-2">
+                <span className="text-sm">👤</span>
+                <span className="text-sm font-black text-white tracking-wide">Lineup</span>
+              </div>
+              {showLineup ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
+            </button>
+            {showLineup && (
+              <div className="border-t border-white/5">
+                {lineup ? (
+                  <div className="grid grid-cols-2 divide-x divide-white/5">
+                    {(["home", "away"] as const).map(side => {
+                      const team = side === "home" ? match.homeTeam : match.awayTeam;
+                      const players = side === "home" ? lineup.home : lineup.away;
+                      return (
+                        <div key={side}>
+                          <p className="px-3 py-2 text-[10px] font-black text-primary uppercase tracking-widest border-b border-white/5">
+                            {team.shortName || team.name}
+                          </p>
+                          {players.length > 0 ? (
+                            <div className="divide-y divide-white/5">
+                              {players.map(p => (
+                                <div key={p.id} className="flex items-center gap-2 px-3 py-2">
+                                  <span className="text-[10px] font-black text-white/30 w-5 shrink-0">#{p.playerNumber}</span>
+                                  <span className="text-[11px] text-white/70 truncate">{p.playerName}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="px-3 py-3 text-[10px] text-white/20">No lineup set</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="px-4 py-4 text-xs text-white/30 text-center">No lineup data</p>
+                )}
+              </div>
+            )}
+          </div>
         </>
+      )}
+
+      {selectedMatchId === 0 && (
+        <div className="py-12 text-center text-muted-foreground text-sm bg-card rounded-xl border border-dashed border-border">
+          Select a match above to manage live events.
+        </div>
+      )}
+
+      {/* ── Event modal ── */}
+      {modal && match && (
+        <EventModal
+          modal={modal}
+          match={match}
+          lineup={lineup as any}
+          defaultMinute={minuteStr}
+          onClose={() => setModal(null)}
+          onSubmit={handleLogEvent}
+          isPending={createEvent.isPending}
+        />
       )}
     </div>
   );
