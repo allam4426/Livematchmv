@@ -58,6 +58,30 @@ function TeamFormDots({ teamId }: { teamId: number }) {
 type Tab = "Summary" | "Squad" | "Standings";
 
 /* ─── Summary ─── */
+const EVENT_ICON: Record<string, string> = {
+  goal:            "⚽",
+  yellow_card:     "🟨",
+  red_card:        "🟥",
+  own_goal:        "⚽",
+  penalty_awarded: "🎯",
+  penalty_goal:    "⚽",
+  penalty_missed:  "❌",
+  substitution:    "🔄",
+  mvp:             "⭐",
+};
+
+const EVENT_LABEL: Record<string, string> = {
+  goal:            "Goal",
+  yellow_card:     "Yellow",
+  red_card:        "Red Card",
+  own_goal:        "Own Goal",
+  penalty_awarded: "Penalty",
+  penalty_goal:    "Pen. Goal",
+  penalty_missed:  "Pen. Miss",
+  substitution:    "Sub",
+  mvp:             "MVP",
+};
+
 function SummaryTab({ match }: { match: MatchDetail }) {
   const events = match.events ?? [];
   if (events.length === 0) {
@@ -67,39 +91,66 @@ function SummaryTab({ match }: { match: MatchDetail }) {
       </div>
     );
   }
+
   return (
-    <div className="space-y-0.5">
-      {events.map(event => {
-        const isHome = event.teamId === match.homeTeam.id;
-        const meta = EVENT_META[event.type] ?? { icon: "•", label: event.type, color: "bg-muted" };
-        const isMvp = event.type === "mvp";
-        return (
-          <div key={event.id}
-            className={cn("flex items-center gap-3 py-2.5 px-1", isHome ? "" : "flex-row-reverse")}>
-            {/* Minute */}
-            <span className={cn("text-xs font-black w-9 shrink-0 tabular-nums", isHome ? "text-left text-primary" : "text-right text-primary")}>
-              {isMvp ? "MVP" : `${event.minute}'`}
-            </span>
-            {/* Icon bubble */}
-            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm", meta.color)}>
-              {meta.icon}
-            </div>
-            {/* Text */}
-            <div className={cn("flex-1 min-w-0", !isHome && "text-right")}>
-              <p className="text-sm font-semibold text-foreground leading-tight">
-                {event.playerNumber && <span className="text-muted-foreground text-xs mr-1">#{event.playerNumber}</span>}
-                {event.playerName}
-              </p>
+    <div className="relative py-2">
+      {/* vertical centre line */}
+      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/60 -translate-x-1/2" />
+
+      <div className="flex flex-col gap-0">
+        {events.map(event => {
+          const isHome = event.teamId === match.homeTeam.id;
+          const isMvp  = event.type === "mvp";
+          const icon   = EVENT_ICON[event.type]  ?? "•";
+          const label  = EVENT_LABEL[event.type] ?? event.type;
+          const minute = isMvp ? "MVP" : `${event.minute}'`;
+
+          const textBlock = (
+            <div className={cn("flex-1 min-w-0 flex flex-col gap-0.5", isHome ? "items-end pr-3 text-right" : "items-start pl-3 text-left")}>
+              <span className="text-[11px] text-muted-foreground/70 tabular-nums leading-none">{minute}</span>
+              <span className="text-[15px] font-bold text-foreground leading-tight">{label}</span>
+              {(event.playerNumber || event.playerName) && (
+                <span className="text-[11px] text-muted-foreground leading-none">
+                  {event.playerNumber ? `#${event.playerNumber} ` : ""}{event.playerName}
+                </span>
+              )}
               {event.assistPlayerName && (
-                <p className="text-xs text-muted-foreground">▷ {event.assistPlayerName}</p>
-              )}
-              {event.description && (
-                <p className="text-xs text-muted-foreground italic">{event.description}</p>
+                <span className="text-[10px] text-muted-foreground/60 leading-none">▷ {event.assistPlayerName}</span>
               )}
             </div>
-          </div>
-        );
-      })}
+          );
+
+          const iconBox = (
+            <div className="relative z-10 flex flex-col items-center shrink-0">
+              <div className="w-11 h-11 rounded-xl border border-border bg-card flex items-center justify-center text-xl shadow-sm">
+                {icon}
+              </div>
+            </div>
+          );
+
+          return (
+            <div key={event.id} className="flex items-center py-3">
+              {isHome ? (
+                <>
+                  {/* home: text right of nothing, fills left half */}
+                  {textBlock}
+                  {iconBox}
+                  {/* spacer for right half */}
+                  <div className="flex-1" />
+                </>
+              ) : (
+                <>
+                  {/* spacer for left half */}
+                  <div className="flex-1" />
+                  {iconBox}
+                  {/* away: text fills right half */}
+                  {textBlock}
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
