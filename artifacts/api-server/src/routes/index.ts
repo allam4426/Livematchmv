@@ -10,6 +10,7 @@ import eventsRouter from "./events";
 import lineupRouter from "./lineup";
 import adminAuthRouter from "./admin-auth";
 import squadRouter from "./squad";
+import bannersRouter from "./banners";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(statsRouter);
 router.use(tournamentsRouter);
 router.use(eventsRouter);
 router.use(lineupRouter);
+router.use(bannersRouter);
 
 export default router;

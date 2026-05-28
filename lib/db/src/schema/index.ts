@@ -6,3 +6,4 @@ export * from "./highlights";
 export * from "./tournaments";
 export * from "./lineups";
 export * from "./squads";
+export * from "./banners";

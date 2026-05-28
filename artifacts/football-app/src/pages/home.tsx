@@ -2,6 +2,7 @@ import { useListLiveMatches, useListMatches, useListCompetitions, useListActiveT
 import { MatchCard } from "@/components/match-card";
 import { MatchRow } from "@/components/match-row";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BannerSlot } from "@/components/banner-slot";
 import { useState, useRef, useEffect } from "react";
 import {
   addDays, format, isToday, isSameDay,
@@ -148,6 +149,8 @@ export default function Home() {
 
   return (
     <div className="pb-6">
+      <BannerSlot position="top_home" />
+
       {/* Featured Live Match */}
       <div className="px-4 pt-4 pb-4">
         {liveLoading ? (

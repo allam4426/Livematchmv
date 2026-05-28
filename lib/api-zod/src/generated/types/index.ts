@@ -8,6 +8,10 @@
 
 export * from './adminAuthStatus';
 export * from './adminLoginInput';
+export * from './banner';
+export * from './bannerInput';
+export * from './bannerInputPosition';
+export * from './bannerPosition';
 export * from './competitionStat';
 export * from './healthStatus';
 export * from './highlight';
@@ -15,6 +19,8 @@ export * from './highlightInput';
 export * from './lineupPlayer';
 export * from './lineupPlayerInput';
 export * from './listActiveTournamentsParams';
+export * from './listBannersParams';
+export * from './listBannersPosition';
 export * from './listHighlightsParams';
 export * from './listLiveMatchesParams';
 export * from './listLiveMatchesSport';

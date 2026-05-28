@@ -3,6 +3,7 @@ import { useListLiveMatches } from "@workspace/api-client-react";
 import { MatchCard } from "@/components/match-card";
 import { MatchRow } from "@/components/match-row";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BannerSlot } from "@/components/banner-slot";
 
 export default function LiveMatches() {
   const { data: matches, isLoading, refetch } = useListLiveMatches();
@@ -27,6 +28,8 @@ export default function LiveMatches() {
           </span>
         )}
       </div>
+
+      <BannerSlot position="top_live" />
 
       {isLoading ? (
         <div className="px-4 space-y-3">

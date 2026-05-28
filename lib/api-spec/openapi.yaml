@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: banners
+    description: Ad banner operations
   - name: matches
     description: Match operations
   - name: teams
@@ -30,6 +32,81 @@ tags:
     description: Admin auth operations
 
 paths:
+  /banners:
+    get:
+      operationId: listBanners
+      tags: [banners]
+      summary: List banners
+      parameters:
+        - in: query
+          name: position
+          schema:
+            type: string
+            enum: [top_home, top_live]
+      responses:
+        "200":
+          description: List of banners
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Banner"
+    post:
+      operationId: createBanner
+      tags: [banners]
+      summary: Create a banner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BannerInput"
+      responses:
+        "201":
+          description: Created banner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Banner"
+  /banners/{id}:
+    patch:
+      operationId: updateBanner
+      tags: [banners]
+      summary: Update a banner
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BannerInput"
+      responses:
+        "200":
+          description: Updated banner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Banner"
+    delete:
+      operationId: deleteBanner
+      tags: [banners]
+      summary: Delete a banner
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /healthz:
     get:
       operationId: healthCheck
@@ -1504,6 +1581,37 @@ components:
           type: integer
         awayScore:
           type: integer
+
+    Banner:
+      type: object
+      required: [id, imageUrl, linkUrl, position, isActive, createdAt]
+      properties:
+        id:
+          type: integer
+        imageUrl:
+          type: string
+        linkUrl:
+          type: string
+        position:
+          type: string
+          enum: [top_home, top_live]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+
+    BannerInput:
+      type: object
+      properties:
+        imageUrl:
+          type: string
+        linkUrl:
+          type: string
+        position:
+          type: string
+          enum: [top_home, top_live]
+        isActive:
+          type: boolean
 
     StatsSummary:
       type: object

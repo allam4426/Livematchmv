@@ -576,6 +576,38 @@ export interface HighlightInput {
   awayScore: number;
 }
 
+export type BannerPosition = typeof BannerPosition[keyof typeof BannerPosition];
+
+
+export const BannerPosition = {
+  top_home: 'top_home',
+  top_live: 'top_live',
+} as const;
+
+export interface Banner {
+  id: number;
+  imageUrl: string;
+  linkUrl: string;
+  position: BannerPosition;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export type BannerInputPosition = typeof BannerInputPosition[keyof typeof BannerInputPosition];
+
+
+export const BannerInputPosition = {
+  top_home: 'top_home',
+  top_live: 'top_live',
+} as const;
+
+export interface BannerInput {
+  imageUrl?: string;
+  linkUrl?: string;
+  position?: BannerInputPosition;
+  isActive?: boolean;
+}
+
 export interface StatsSummary {
   liveMatchCount: number;
   scheduledMatchCount: number;
@@ -593,6 +625,18 @@ export interface CompetitionStat {
   liveCount: number;
   totalCount: number;
 }
+
+export type ListBannersParams = {
+position?: ListBannersPosition;
+};
+
+export type ListBannersPosition = typeof ListBannersPosition[keyof typeof ListBannersPosition];
+
+
+export const ListBannersPosition = {
+  top_home: 'top_home',
+  top_live: 'top_live',
+} as const;
 
 export type ListTeamsParams = {
 sport?: ListTeamsSport;

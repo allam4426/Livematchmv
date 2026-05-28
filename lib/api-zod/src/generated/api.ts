@@ -9,6 +9,67 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary List banners
+ */
+export const ListBannersQueryParams = zod.object({
+  "position": zod.enum(['top_home', 'top_live']).optional()
+})
+
+export const ListBannersResponseItem = zod.object({
+  "id": zod.number(),
+  "imageUrl": zod.string(),
+  "linkUrl": zod.string(),
+  "position": zod.enum(['top_home', 'top_live']),
+  "isActive": zod.boolean(),
+  "createdAt": zod.string()
+})
+export const ListBannersResponse = zod.array(ListBannersResponseItem)
+
+
+/**
+ * @summary Create a banner
+ */
+export const CreateBannerBody = zod.object({
+  "imageUrl": zod.string().optional(),
+  "linkUrl": zod.string().optional(),
+  "position": zod.enum(['top_home', 'top_live']).optional(),
+  "isActive": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Update a banner
+ */
+export const UpdateBannerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateBannerBody = zod.object({
+  "imageUrl": zod.string().optional(),
+  "linkUrl": zod.string().optional(),
+  "position": zod.enum(['top_home', 'top_live']).optional(),
+  "isActive": zod.boolean().optional()
+})
+
+export const UpdateBannerResponse = zod.object({
+  "id": zod.number(),
+  "imageUrl": zod.string(),
+  "linkUrl": zod.string(),
+  "position": zod.enum(['top_home', 'top_live']),
+  "isActive": zod.boolean(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a banner
+ */
+export const DeleteBannerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
