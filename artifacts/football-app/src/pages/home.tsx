@@ -272,10 +272,14 @@ export default function Home() {
                       <div className="flex items-start gap-2.5 mb-3">
                         <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0 overflow-hidden">
                           {t.logoUrl ? (
-                            <img src={t.logoUrl} alt={t.name} className="w-8 h-8 object-contain" />
-                          ) : (
-                            <Trophy className="w-5 h-5 text-muted-foreground" />
-                          )}
+                            <img
+                              src={t.logoUrl}
+                              alt={t.name}
+                              className="w-8 h-8 object-contain"
+                              onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; (e.currentTarget.nextElementSibling as HTMLElement | null)?.removeAttribute("style"); }}
+                            />
+                          ) : null}
+                          <Trophy className="w-5 h-5 text-muted-foreground" style={t.logoUrl ? { display: "none" } : undefined} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-black text-foreground leading-tight line-clamp-2">{t.name}</p>

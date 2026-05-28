@@ -50,8 +50,13 @@ export function MatchCard({ match }: { match: Match }) {
             </div>
 
             <div className="flex flex-col items-center justify-center px-4 gap-1 shrink-0">
-              {isLive && match.minute && (
-                <span className="text-[11px] font-medium text-white/60 mb-1">H1 · {match.minute}</span>
+              {isLive && match.minute && match.minute !== "HT" && (
+                <span className="text-[11px] font-medium text-white/60 mb-1">
+                  {Number(match.minute.split("+")[0]) > 45 ? "H2" : "H1"} · {match.minute}'
+                </span>
+              )}
+              {isLive && match.minute === "HT" && (
+                <span className="text-[11px] font-medium text-yellow-400/80 mb-1">Half Time</span>
               )}
               {(isLive || match.status === "finished") ? (
                 <div className="text-4xl font-black text-white tabular-nums tracking-tight">

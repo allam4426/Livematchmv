@@ -39,7 +39,9 @@ export function MatchRow({ match, index = 0 }: { match: Match; index?: number })
                   <span className="text-muted-foreground/60 text-sm">-</span>
                   <span>{match.awayScore}</span>
                 </div>
-                <span className="text-[10px] font-bold text-red-400">{match.minute}</span>
+                <span className="text-[10px] font-bold text-red-400">
+                  {match.minute === "HT" ? "HT" : `${match.minute}'`}
+                </span>
               </div>
             ) : isFinished ? (
               <div className="flex items-center gap-2 font-black text-base tabular-nums text-muted-foreground">
