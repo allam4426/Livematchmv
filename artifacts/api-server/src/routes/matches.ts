@@ -177,7 +177,10 @@ router.patch("/matches/:id", async (req, res) => {
   const { id } = UpdateMatchParams.parse({ id: Number(req.params.id) });
   const parsed = UpdateMatchBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [match] = await db.update(matchesTable).set(parsed.data).where(eq(matchesTable.id, id)).returning();
+  const { kickoffAt: kickoffAtStr, ...rest } = parsed.data;
+  const updateData: Record<string, unknown> = { ...rest };
+  if (kickoffAtStr) updateData.kickoffAt = new Date(kickoffAtStr);
+  const [match] = await db.update(matchesTable).set(updateData).where(eq(matchesTable.id, id)).returning();
   if (!match) { res.status(404).json({ error: "Match not found" }); return; }
 
   const homeTeam = alias(teamsTable, "homeTeam");

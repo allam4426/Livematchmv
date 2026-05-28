@@ -1,21 +1,24 @@
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
 import { Home as HomeIcon, Gamepad2, Play, LayoutGrid } from "lucide-react";
+import { useAdminMe } from "@workspace/api-client-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { data: auth } = useAdminMe();
+  const isAdmin = auth?.authenticated === true;
+
+  const topNav = [
+    { href: "/", label: "Home" },
+    { href: "/live", label: "Live" },
+    ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
+  ];
 
   const bottomNav = [
     { href: "/", label: "Home", icon: HomeIcon },
     { href: "/live", label: "Live", icon: Gamepad2 },
     { href: "/stream/1", label: "Stream", icon: Play },
-    { href: "/admin", label: "Admin", icon: LayoutGrid },
-  ];
-
-  const topNav = [
-    { href: "/", label: "Home" },
-    { href: "/live", label: "Live" },
-    { href: "/admin", label: "Admin" },
+    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: LayoutGrid }] : []),
   ];
 
   return (

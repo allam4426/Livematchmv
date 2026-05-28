@@ -596,7 +596,13 @@ export const UpdateMatchBody = zod.object({
   "status": zod.enum(['live', 'scheduled', 'finished', 'postponed']).optional(),
   "minute": zod.string().optional(),
   "featured": zod.boolean().optional(),
-  "venue": zod.string().optional()
+  "venue": zod.string().optional(),
+  "kickoffAt": zod.coerce.date().optional(),
+  "homeTeamId": zod.number().optional(),
+  "awayTeamId": zod.number().optional(),
+  "tournamentId": zod.number().nullish(),
+  "competition": zod.string().optional(),
+  "matchGroup": zod.string().nullish()
 })
 
 export const UpdateMatchResponse = zod.object({

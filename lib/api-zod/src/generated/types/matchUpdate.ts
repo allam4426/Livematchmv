@@ -14,4 +14,12 @@ export interface MatchUpdate {
   minute?: string;
   featured?: boolean;
   venue?: string;
+  kickoffAt?: Date;
+  homeTeamId?: number;
+  awayTeamId?: number;
+  /** @nullable */
+  tournamentId?: number | null;
+  competition?: string;
+  /** @nullable */
+  matchGroup?: string | null;
 }

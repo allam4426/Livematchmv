@@ -419,6 +419,14 @@ export interface MatchUpdate {
   minute?: string;
   featured?: boolean;
   venue?: string;
+  kickoffAt?: string;
+  homeTeamId?: number;
+  awayTeamId?: number;
+  /** @nullable */
+  tournamentId?: number | null;
+  competition?: string;
+  /** @nullable */
+  matchGroup?: string | null;
 }
 
 export type MatchEventInputType = typeof MatchEventInputType[keyof typeof MatchEventInputType];

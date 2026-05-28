@@ -1237,6 +1237,19 @@ components:
           type: boolean
         venue:
           type: string
+        kickoffAt:
+          type: string
+          format: date-time
+        homeTeamId:
+          type: integer
+        awayTeamId:
+          type: integer
+        tournamentId:
+          type: ["integer", "null"]
+        competition:
+          type: string
+        matchGroup:
+          type: ["string", "null"]
 
     MatchEvent:
       type: object

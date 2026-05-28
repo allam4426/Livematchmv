@@ -29,11 +29,18 @@ const EMPTY_FORM = {
   matchGroup: "",
 };
 
+function toDateTimeLocal(iso: string) {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function MatchesTab() {
   const qc = useQueryClient();
   const [sport, setSport] = useState<"all" | Sport>("all");
   const [showForm, setShowForm] = useState(false);
   const [editMatch, setEditMatch] = useState<Match | null>(null);
+  const [editForm, setEditForm] = useState({ ...EMPTY_FORM });
   const [form, setForm] = useState({ ...EMPTY_FORM });
 
   const [autoFillPending, setAutoFillPending] = useState<number | null>(null);
@@ -49,7 +56,8 @@ export function MatchesTab() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getListMatchesQueryKey() });
 
-  const filteredTeams = teams?.filter(t => sport === "all" || t.sport === sport);
+  const filteredTeams = (sportKey: Sport | "all") =>
+    teams?.filter(t => sportKey === "all" || t.sport === sportKey) ?? [];
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,15 +74,43 @@ export function MatchesTab() {
     }, { onSuccess: () => { setForm({ ...EMPTY_FORM }); setShowForm(false); invalidate(); } });
   };
 
+  const openEdit = (m: Match) => {
+    setEditMatch(editMatch?.id === m.id ? null : m);
+    if (editMatch?.id !== m.id) {
+      setEditForm({
+        homeTeamId: m.homeTeam.id,
+        awayTeamId: m.awayTeam.id,
+        competition: m.competition,
+        kickoffAt: toDateTimeLocal(m.kickoffAt),
+        sport: (m.sport ?? "football") as Sport,
+        tournamentId: m.tournamentId ?? 0,
+        venue: m.venue ?? "",
+        homeScore: m.homeScore,
+        awayScore: m.awayScore,
+        status: m.status as Status,
+        minute: m.minute ?? "",
+        featured: m.featured ?? false,
+        matchGroup: m.matchGroup ?? "",
+      });
+    }
+  };
+
   const handleUpdate = (id: number) => {
     updateMatch.mutate({
       id,
       data: {
-        homeScore: editMatch?.homeScore ?? 0,
-        awayScore: editMatch?.awayScore ?? 0,
-        status: editMatch?.status as Status,
-        minute: editMatch?.minute || undefined,
-        featured: editMatch?.featured ?? false,
+        homeTeamId: editForm.homeTeamId || undefined,
+        awayTeamId: editForm.awayTeamId || undefined,
+        competition: editForm.competition || undefined,
+        kickoffAt: editForm.kickoffAt ? new Date(editForm.kickoffAt).toISOString() : undefined,
+        tournamentId: editForm.tournamentId || null,
+        venue: editForm.venue || undefined,
+        matchGroup: editForm.matchGroup || null,
+        homeScore: editForm.homeScore,
+        awayScore: editForm.awayScore,
+        status: editForm.status as Status,
+        minute: editForm.minute || undefined,
+        featured: editForm.featured,
       }
     }, { onSuccess: () => { setEditMatch(null); invalidate(); } });
   };
@@ -97,7 +133,7 @@ export function MatchesTab() {
     });
   };
 
-  const teamName = (id: number) => teams?.find(t => t.id === id)?.name ?? id.toString();
+  const editSport = editForm.sport;
 
   return (
     <div className="space-y-4">
@@ -141,14 +177,14 @@ export function MatchesTab() {
               <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Home Team *</label>
               <select value={form.homeTeamId} onChange={e => setForm(f => ({ ...f, homeTeamId: Number(e.target.value) }))} className="admin-input">
                 <option value={0}>Select team</option>
-                {filteredTeams?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                {filteredTeams(form.sport).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
             <div>
               <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Away Team *</label>
               <select value={form.awayTeamId} onChange={e => setForm(f => ({ ...f, awayTeamId: Number(e.target.value) }))} className="admin-input">
                 <option value={0}>Select team</option>
-                {filteredTeams?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                {filteredTeams(form.sport).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
             <div className="col-span-2">
@@ -171,13 +207,11 @@ export function MatchesTab() {
               <input value={form.venue} onChange={e => setForm(f => ({ ...f, venue: e.target.value }))}
                 placeholder="Wembley Stadium" className="admin-input" />
             </div>
-            {tournaments?.find(t => t.id === form.tournamentId)?.format === "group_stage" && (
-              <div>
-                <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Group</label>
-                <input value={form.matchGroup} onChange={e => setForm(f => ({ ...f, matchGroup: e.target.value }))}
-                  placeholder="Group A" className="admin-input" />
-              </div>
-            )}
+            <div>
+              <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Match Group / Round</label>
+              <input value={form.matchGroup} onChange={e => setForm(f => ({ ...f, matchGroup: e.target.value }))}
+                placeholder="Group A / Semi-Final" className="admin-input" />
+            </div>
             <div className="flex items-center gap-2 mt-4">
               <input type="checkbox" id="featured" checked={form.featured}
                 onChange={e => setForm(f => ({ ...f, featured: e.target.checked }))}
@@ -205,6 +239,11 @@ export function MatchesTab() {
                       {m.status === "live" && m.minute ? `Live · ${m.minute}` : m.status}
                     </span>
                     <span className="text-[10px] text-muted-foreground capitalize">{m.sport}</span>
+                    {m.matchGroup && (
+                      <span className="text-[10px] text-muted-foreground/70 bg-muted/40 border border-border rounded px-1.5 py-0.5">
+                        {m.matchGroup}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <TeamLogo url={m.homeTeam.logoUrl} name={m.homeTeam.name} shortName={m.homeTeam.shortName} className="w-5 h-5" />
@@ -213,7 +252,7 @@ export function MatchesTab() {
                     <span className="text-sm font-bold text-foreground">{m.awayTeam.shortName}</span>
                     <TeamLogo url={m.awayTeam.logoUrl} name={m.awayTeam.name} shortName={m.awayTeam.shortName} className="w-5 h-5" />
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{m.competition} · {format(new Date(m.kickoffAt), "d MMM HH:mm")}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{m.competition} · {format(new Date(m.kickoffAt), "d MMM yyyy HH:mm")}</p>
                 </div>
                 <button
                   onClick={() => handleAutoFill(m.id)}
@@ -223,8 +262,8 @@ export function MatchesTab() {
                   <Users className="w-3.5 h-3.5" />
                   {autoFillPending === m.id ? "..." : "Auto"}
                 </button>
-                <button onClick={() => setEditMatch(editMatch?.id === m.id ? null : m)}
-                  className="text-muted-foreground hover:text-primary p-1 transition-colors">
+                <button onClick={() => openEdit(m)}
+                  className={cn("p-1 transition-colors", editMatch?.id === m.id ? "text-primary" : "text-muted-foreground hover:text-primary")}>
                   <Pencil className="w-4 h-4" />
                 </button>
                 <button onClick={() => handleDelete(m.id)} className="text-muted-foreground hover:text-red-400 p-1 transition-colors">
@@ -232,47 +271,126 @@ export function MatchesTab() {
                 </button>
               </div>
 
-              {/* Auto-fill feedback */}
               {autoFillMsg?.id === m.id && (
                 <div className="border-t border-border/50 px-4 py-2 bg-muted/20 text-[10px] font-semibold text-muted-foreground">
                   {autoFillMsg.msg}
                 </div>
               )}
 
-              {/* Inline edit panel */}
+              {/* Full edit panel */}
               {editMatch?.id === m.id && (
                 <div className="border-t border-border px-4 pb-4 pt-3 bg-muted/20 space-y-3">
-                  <p className="text-xs font-bold text-foreground">Quick Update</p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <p className="text-xs font-bold text-foreground">Edit Match</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Sport */}
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Sport</label>
+                      <select value={editForm.sport}
+                        onChange={e => setEditForm(f => ({ ...f, sport: e.target.value as Sport }))}
+                        className="admin-input">
+                        <option value="football">Football</option>
+                        <option value="futsal">Futsal</option>
+                      </select>
+                    </div>
+                    {/* Tournament */}
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Tournament</label>
+                      <select value={editForm.tournamentId}
+                        onChange={e => setEditForm(f => ({ ...f, tournamentId: Number(e.target.value) }))}
+                        className="admin-input">
+                        <option value={0}>— None —</option>
+                        {tournaments?.filter(t => t.sport === editForm.sport).map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {/* Home team */}
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Home Team</label>
+                      <select value={editForm.homeTeamId}
+                        onChange={e => setEditForm(f => ({ ...f, homeTeamId: Number(e.target.value) }))}
+                        className="admin-input">
+                        <option value={0}>Select team</option>
+                        {filteredTeams(editSport).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                    </div>
+                    {/* Away team */}
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Away Team</label>
+                      <select value={editForm.awayTeamId}
+                        onChange={e => setEditForm(f => ({ ...f, awayTeamId: Number(e.target.value) }))}
+                        className="admin-input">
+                        <option value={0}>Select team</option>
+                        {filteredTeams(editSport).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                    </div>
+                    {/* Competition */}
+                    <div className="col-span-2">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Competition</label>
+                      <input value={editForm.competition}
+                        onChange={e => setEditForm(f => ({ ...f, competition: e.target.value }))}
+                        className="admin-input" placeholder="Premier League" />
+                    </div>
+                    {/* Date/time */}
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Date & Time</label>
+                      <input type="datetime-local" value={editForm.kickoffAt}
+                        onChange={e => setEditForm(f => ({ ...f, kickoffAt: e.target.value }))}
+                        className="admin-input" />
+                    </div>
+                    {/* Venue */}
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Venue</label>
+                      <input value={editForm.venue}
+                        onChange={e => setEditForm(f => ({ ...f, venue: e.target.value }))}
+                        className="admin-input" placeholder="Wembley" />
+                    </div>
+                    {/* Match Group */}
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Group / Round</label>
+                      <input value={editForm.matchGroup}
+                        onChange={e => setEditForm(f => ({ ...f, matchGroup: e.target.value }))}
+                        className="admin-input" placeholder="Group A / Semi-Final" />
+                    </div>
+                    {/* Status */}
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Status</label>
+                      <div className="flex gap-1 flex-wrap">
+                        {STATUSES.map(s => (
+                          <button key={s} type="button"
+                            onClick={() => setEditForm(f => ({ ...f, status: s }))}
+                            className={cn("rounded-full px-2.5 py-1 text-[10px] font-bold border capitalize transition-all",
+                              editForm.status === s ? "bg-primary text-white border-primary" : "bg-card text-muted-foreground border-border"
+                            )}>{s}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Score */}
                     <div>
                       <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Home Score</label>
-                      <input type="number" min={0} value={editMatch.homeScore}
-                        onChange={e => setEditMatch(em => em ? { ...em, homeScore: Number(e.target.value) } : em)}
+                      <input type="number" min={0} value={editForm.homeScore}
+                        onChange={e => setEditForm(f => ({ ...f, homeScore: Number(e.target.value) }))}
                         className="admin-input text-center" />
                     </div>
                     <div>
                       <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Away Score</label>
-                      <input type="number" min={0} value={editMatch.awayScore}
-                        onChange={e => setEditMatch(em => em ? { ...em, awayScore: Number(e.target.value) } : em)}
+                      <input type="number" min={0} value={editForm.awayScore}
+                        onChange={e => setEditForm(f => ({ ...f, awayScore: Number(e.target.value) }))}
                         className="admin-input text-center" />
                     </div>
+                    {/* Minute */}
                     <div>
                       <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Minute</label>
-                      <input value={editMatch.minute ?? ""}
-                        onChange={e => setEditMatch(em => em ? { ...em, minute: e.target.value } : em)}
+                      <input value={editForm.minute}
+                        onChange={e => setEditForm(f => ({ ...f, minute: e.target.value }))}
                         placeholder="45'" className="admin-input text-center" />
                     </div>
-                    <div className="col-span-3">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Status</label>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {STATUSES.map(s => (
-                          <button key={s} type="button"
-                            onClick={() => setEditMatch(em => em ? { ...em, status: s } : em)}
-                            className={cn("rounded-full px-2.5 py-1 text-[10px] font-bold border capitalize transition-all",
-                              editMatch.status === s ? "bg-primary text-white border-primary" : "bg-card text-muted-foreground border-border"
-                            )}>{s}</button>
-                        ))}
-                      </div>
+                    {/* Featured */}
+                    <div className="flex items-center gap-2 pt-4">
+                      <input type="checkbox" id={`feat-${m.id}`} checked={editForm.featured}
+                        onChange={e => setEditForm(f => ({ ...f, featured: e.target.checked }))}
+                        className="w-4 h-4 rounded" />
+                      <label htmlFor={`feat-${m.id}`} className="text-xs font-semibold text-muted-foreground">Featured</label>
                     </div>
                   </div>
                   <button onClick={() => handleUpdate(m.id)} disabled={updateMatch.isPending}

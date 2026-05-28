@@ -10,7 +10,7 @@ import { useParams, Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TeamLogo } from "@/components/team-logo";
 import { MatchRow } from "@/components/match-row";
-import { Trophy, ChevronLeft, Calendar, Layers, GitBranch } from "lucide-react";
+import { Trophy, ChevronLeft, Calendar, Layers, GitBranch, Users } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -290,9 +290,10 @@ export default function TournamentPage() {
   const tournamentId = parseInt(id || "0", 10);
 
   const isKnockout = (fmt?: string | null) => fmt === "knockout";
-  const showBracket = (fmt?: string | null) => fmt === "knockout";
+  const isGroupStageOrKnockout = (fmt?: string | null) => fmt === "group_stage" || fmt === "knockout";
 
-  const [activeTab, setActiveTab] = useState<"matches" | "standings" | "bracket">("matches");
+  type Tab = "matches" | "standings" | "bracket" | "teams";
+  const [activeTab, setActiveTab] = useState<Tab>("matches");
 
   const { data: tournament, isLoading: tLoading } = useGetTournament(tournamentId, {
     query: { enabled: !!tournamentId, queryKey: getGetTournamentQueryKey(tournamentId) },
@@ -333,6 +334,21 @@ export default function TournamentPage() {
   const fmt = tournament.format;
   const isGroupStage = fmt === "group_stage";
 
+  /* ── unique teams from matches ── */
+  const teamMap = new Map<number, MatchItem["homeTeam"]>();
+  if (matches) {
+    for (const m of matches) {
+      if (!teamMap.has(m.homeTeam.id)) teamMap.set(m.homeTeam.id, m.homeTeam);
+      if (!teamMap.has(m.awayTeam.id)) teamMap.set(m.awayTeam.id, m.awayTeam);
+    }
+  }
+  const participatingTeams = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+
+  /* ── bracket matches (for group_stage: only knockout rounds) ── */
+  const bracketMatches = isGroupStage
+    ? ((matches ?? []) as MatchItem[]).filter(m => m.matchGroup && roundOrder(m.matchGroup) !== 999)
+    : (matches ?? []) as MatchItem[];
+
   /* ── group matches for the Matches tab ── */
   const groupedMatches: Record<string, typeof matches> = {};
   if (matches) {
@@ -361,10 +377,12 @@ export default function TournamentPage() {
   });
 
   /* ── tabs config ── */
-  type Tab = "matches" | "standings" | "bracket";
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "matches", label: "Matches", icon: <Calendar className="w-3.5 h-3.5" /> },
-    ...(showBracket(fmt)
+    ...(participatingTeams.length > 0
+      ? [{ id: "teams" as Tab, label: "Teams", icon: <Users className="w-3.5 h-3.5" /> }]
+      : []),
+    ...(isGroupStageOrKnockout(fmt)
       ? [{ id: "bracket" as Tab, label: "Bracket", icon: <GitBranch className="w-3.5 h-3.5" /> }]
       : []),
     ...(!isKnockout(fmt)
@@ -467,6 +485,41 @@ export default function TournamentPage() {
         </div>
       )}
 
+      {/* ── Teams tab ── */}
+      {activeTab === "teams" && (
+        <div className="px-4">
+          {mLoading ? (
+            <div className="grid grid-cols-2 gap-2">
+              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
+            </div>
+          ) : participatingTeams.length > 0 ? (
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+              {participatingTeams.map(team => (
+                <div key={team.id} className="bg-card rounded-xl border border-border p-3 flex items-center gap-3">
+                  <TeamLogo
+                    url={team.logoUrl ?? ""}
+                    name={team.name}
+                    shortName={team.shortName ?? team.name}
+                    className="w-10 h-10 shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-foreground truncate">{team.name}</p>
+                    {team.shortName && team.shortName !== team.name && (
+                      <p className="text-[10px] text-muted-foreground">{team.shortName}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-12 text-center text-muted-foreground text-sm bg-card rounded-xl border border-dashed border-border">
+              <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              No matches scheduled yet — teams will appear here once matches are added.
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Bracket tab ── */}
       {activeTab === "bracket" && (
         <>
@@ -475,7 +528,7 @@ export default function TournamentPage() {
               <Skeleton className="h-64 w-full rounded-xl" />
             </div>
           ) : (
-            <KnockoutBracket matches={(matches as MatchItem[]) ?? []} />
+            <KnockoutBracket matches={bracketMatches} />
           )}
         </>
       )}
