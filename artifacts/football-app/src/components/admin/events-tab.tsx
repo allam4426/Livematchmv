@@ -15,43 +15,40 @@ type EventType =
   | "penalty_awarded" | "penalty_goal" | "penalty_missed"
   | "substitution" | "mvp";
 
-/* ─── stoppage-time helpers ─── */
-const HALF_BREAKS = [45, 90, 105, 120]; // standard break points
-
-function calcDisplay(totalSeconds: number) {
-  const totalMin = Math.floor(totalSeconds / 60);
-  const secs = totalSeconds % 60;
-  const ss = String(secs).padStart(2, "0");
-
-  // Find the last break point we've passed
-  const base = [...HALF_BREAKS].reverse().find(b => totalMin >= b);
-  if (base !== undefined) {
-    const extra = totalMin - base;
-    const display = extra > 0 ? `${base}+${extra}:${ss}` : `${base}:${ss}`;
-    const minuteStr = extra > 0 ? `${base}+${extra}` : String(totalMin + 1);
-    return { display, minuteStr, isStoppage: extra > 0, base, extra };
-  }
-  const mm = String(totalMin).padStart(2, "0");
-  return { display: `${mm}:${ss}`, minuteStr: String(totalMin + 1), isStoppage: false, base: null, extra: 0 };
-}
-
-/* ─── stopwatch ─── */
+/* ─── stopwatch ─────────────────────────────────────────────────────────────
+ * Key design decisions:
+ *  - Stoppage ("45+N") only activates when admin explicitly presses +1 min.
+ *    The clock naturally counts 46, 47 … 90 without triggering stoppage mode.
+ *  - When paused (half-time), initRef saves current position so the clock
+ *    resumes correctly when the second half starts — no jump back to 00:00.
+ * ─────────────────────────────────────────────────────────────────────────── */
 function useMatchStopwatch(isRunning: boolean, matchId: number, initialMinute: string | null | undefined) {
   const initRef = useRef(0);
+  const elapsedRef = useRef(0);          // always tracks live elapsed for save-on-pause
   const startWallRef = useRef<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  // Stoppage is EXPLICIT — only set when admin presses "+1 min"
+  const [stoppageBase, setStoppageBase] = useState<number | null>(null);
+  const [stoppageCount, setStoppageCount] = useState(0);
 
-  // Re-initialize when match changes
+  // Keep elapsedRef in sync every render (no extra re-render cost)
+  elapsedRef.current = elapsed;
+
+  // Re-initialize when the selected match changes
   useEffect(() => {
     const n = initialMinute ? parseInt(initialMinute, 10) : 0;
     const init = isNaN(n) ? 0 : Math.max(0, n - 1) * 60;
     initRef.current = init;
     setElapsed(init);
+    setStoppageBase(null);
+    setStoppageCount(0);
     startWallRef.current = null;
   }, [matchId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isRunning) {
+      // ★ Save current position so second half resumes from here (e.g. 45:xx)
+      initRef.current = elapsedRef.current;
       startWallRef.current = null;
       return;
     }
@@ -69,16 +66,41 @@ function useMatchStopwatch(isRunning: boolean, matchId: number, initialMinute: s
     initRef.current = toSeconds;
     startWallRef.current = isRunning ? Date.now() - toSeconds * 1000 : null;
     setElapsed(toSeconds);
+    setStoppageBase(null);
+    setStoppageCount(0);
   };
 
+  /** Add one extra minute of stoppage time. Activates "45+N" display. */
   const addMinute = () => {
     const next = elapsed + 60;
     initRef.current = next;
     startWallRef.current = isRunning ? Date.now() - next * 1000 : null;
     setElapsed(next);
+    if (stoppageBase === null) {
+      // First +1 press — anchor stoppage to the current whole minute
+      setStoppageBase(Math.floor(elapsed / 60));
+      setStoppageCount(1);
+    } else {
+      setStoppageCount(c => c + 1);
+    }
   };
 
-  return { ...calcDisplay(elapsed), reset, addMinute };
+  // ── Display ──────────────────────────────────────────────────────────────
+  const totalMin = Math.floor(elapsed / 60);
+  const ss = String(elapsed % 60).padStart(2, "0");
+  const isStoppage = stoppageBase !== null;
+
+  let display: string;
+  let minuteStr: string;
+  if (isStoppage && stoppageBase !== null) {
+    display = `${stoppageBase}+${stoppageCount}:${ss}`;
+    minuteStr = `${stoppageBase}+${stoppageCount}`;
+  } else {
+    display = `${String(totalMin).padStart(2, "0")}:${ss}`;
+    minuteStr = String(totalMin + 1);
+  }
+
+  return { display, minuteStr, isStoppage, reset, addMinute };
 }
 
 /* ─── event log modal ─── */
