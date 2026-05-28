@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   useListMatches, useListMatchEvents, useCreateMatchEvent, useDeleteMatchEvent,
-  useUpdateMatch, useGetMatchLineup,
+  useUpdateMatchEvent, useUpdateMatch, useGetMatchLineup,
   getListMatchEventsQueryKey, getGetMatchLineupQueryKey, getListMatchesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronDown, ChevronUp, Trash2, RotateCcw, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2, RotateCcw, X, Pencil, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /* ─── types ─── */
@@ -347,7 +347,13 @@ export function EventsTab() {
 
   const createEvent = useCreateMatchEvent();
   const deleteEvent = useDeleteMatchEvent();
+  const updateEvent = useUpdateMatchEvent();
   const updateMatch = useUpdateMatch();
+
+  // Inline event editing state
+  const [editingEventId, setEditingEventId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editNumber, setEditNumber] = useState("");
 
   const invalidateEvents = useCallback(() =>
     qc.invalidateQueries({ queryKey: getListMatchEventsQueryKey(selectedMatchId) }),
@@ -437,6 +443,38 @@ export function EventsTab() {
 
   const handleDelete = (eventId: number) =>
     deleteEvent.mutate({ id: selectedMatchId, eventId }, { onSuccess: invalidateEvents });
+
+  const handleEditStart = (event: { id: number; playerName?: string | null; playerNumber?: string | null }) => {
+    setEditingEventId(event.id);
+    setEditName(event.playerName ?? "");
+    setEditNumber(event.playerNumber ?? "");
+  };
+
+  const handleEditSave = (eventId: number) => {
+    const event = (events ?? []).find(e => e.id === eventId);
+    if (!event) return;
+    updateEvent.mutate(
+      {
+        id: selectedMatchId,
+        eventId,
+        data: {
+          type: event.type as Parameters<typeof updateEvent.mutate>[0]["data"]["type"],
+          minute: event.minute,
+          teamId: event.teamId,
+          playerName: editName.trim(),
+          playerNumber: editNumber.trim() || undefined,
+          assistPlayerName: event.assistPlayerName ?? undefined,
+          description: event.description ?? undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          setEditingEventId(null);
+          invalidateEvents();
+        },
+      }
+    );
+  };
 
   /* event tile config */
   const EVENT_TILES: { type: EventType; label: string; bg: string; icon: string }[] = [
@@ -673,25 +711,77 @@ export function EventsTab() {
                   <div className="divide-y divide-white/5">
                     {[...events].reverse().map(event => {
                       const info = LOG_ICONS[event.type];
+                      const isEditing = editingEventId === event.id;
                       return (
-                        <div key={event.id} className="flex items-center gap-3 px-4 py-3">
-                          <span className="text-base w-6 text-center shrink-0">{info?.icon ?? "•"}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-white leading-tight">
-                              {event.playerNumber && <span className="text-white/40 mr-1">#{event.playerNumber}</span>}
-                              {event.playerName}
-                              {event.assistPlayerName && <span className="text-white/40 text-xs ml-1">▷ {event.assistPlayerName}</span>}
-                            </p>
-                            <p className="text-[10px] text-white/40 mt-0.5">
-                              <span className={cn("font-black mr-1.5", info?.color ?? "text-white/50")}>{event.minute}'</span>
-                              {info?.label ?? event.type}
-                              {event.description && ` · ${event.description}`}
-                            </p>
-                          </div>
-                          <button onClick={() => handleDelete(event.id)}
-                            className="text-white/20 hover:text-red-400 p-1 transition-colors shrink-0">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                        <div key={event.id} className="px-4 py-3">
+                          {isEditing ? (
+                            /* ── Inline edit form ── */
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-[10px] text-white/40 mb-1">
+                                <span>{info?.icon ?? "•"}</span>
+                                <span className={cn("font-black", info?.color ?? "text-white/50")}>{event.minute}'</span>
+                                <span>{info?.label ?? event.type}</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={editNumber}
+                                  onChange={e => setEditNumber(e.target.value)}
+                                  placeholder="#"
+                                  className="w-14 bg-white/10 border border-white/20 rounded-lg px-2 py-1.5 text-xs text-white text-center font-mono focus:outline-none focus:border-primary"
+                                />
+                                <input
+                                  autoFocus
+                                  type="text"
+                                  value={editName}
+                                  onChange={e => setEditName(e.target.value)}
+                                  onKeyDown={e => { if (e.key === "Enter") handleEditSave(event.id); if (e.key === "Escape") setEditingEventId(null); }}
+                                  placeholder="Player name"
+                                  className="flex-1 bg-white/10 border border-white/20 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-primary"
+                                />
+                                <button
+                                  onClick={() => handleEditSave(event.id)}
+                                  disabled={updateEvent.isPending}
+                                  className="w-8 h-8 rounded-lg bg-emerald-600/80 hover:bg-emerald-500 flex items-center justify-center transition-colors shrink-0">
+                                  <Check className="w-3.5 h-3.5 text-white" />
+                                </button>
+                                <button
+                                  onClick={() => setEditingEventId(null)}
+                                  className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors shrink-0">
+                                  <X className="w-3.5 h-3.5 text-white/60" />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            /* ── Normal row ── */
+                            <div className="flex items-center gap-3">
+                              <span className="text-base w-6 text-center shrink-0">{info?.icon ?? "•"}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-white leading-tight">
+                                  {event.playerNumber && <span className="text-white/40 mr-1">#{event.playerNumber}</span>}
+                                  {event.playerName
+                                    ? event.playerName
+                                    : <span className="text-white/25 italic text-xs">No player — tap ✏️ to add</span>}
+                                  {event.assistPlayerName && <span className="text-white/40 text-xs ml-1">▷ {event.assistPlayerName}</span>}
+                                </p>
+                                <p className="text-[10px] text-white/40 mt-0.5">
+                                  <span className={cn("font-black mr-1.5", info?.color ?? "text-white/50")}>{event.minute}'</span>
+                                  {info?.label ?? event.type}
+                                  {event.description && ` · ${event.description}`}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => handleEditStart(event)}
+                                title="Edit player"
+                                className="text-white/20 hover:text-blue-400 p-1 transition-colors shrink-0">
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button onClick={() => handleDelete(event.id)}
+                                className="text-white/20 hover:text-red-400 p-1 transition-colors shrink-0">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
