@@ -1,12 +1,12 @@
 import { useState } from "react";
 import {
-  useListTournaments, useCreateTournament, useDeleteTournament, useUpdateTournament,
+  useListTournaments, useCreateTournament, useUpdateTournament, useDeleteTournament,
   useGetTournamentStandings,
   getListTournamentsQueryKey, getGetTournamentStandingsQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trash2, Plus, X, Trophy, ChevronDown, Layers } from "lucide-react";
+import { Trash2, Plus, X, Trophy, ChevronDown, Layers, Pencil, Check } from "lucide-react";
 import { TeamLogo } from "@/components/team-logo";
 import { cn } from "@/lib/utils";
 
@@ -20,9 +20,12 @@ export function TournamentsTab() {
   const [form, setForm] = useState({ ...EMPTY });
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({ ...EMPTY });
 
   const { data: tournaments, isLoading } = useListTournaments();
   const createTournament = useCreateTournament();
+  const updateTournament = useUpdateTournament();
   const deleteTournament = useDeleteTournament();
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getListTournamentsQueryKey() });
@@ -32,6 +35,26 @@ export function TournamentsTab() {
     if (!form.name || !form.season) return;
     createTournament.mutate({ data: { ...form } }, {
       onSuccess: () => { setForm({ ...EMPTY }); setShowForm(false); invalidate(); },
+    });
+  };
+
+  const handleEditStart = (t: { id: number; name: string; sport: string; season: string; logoUrl?: string | null; description?: string | null; format: string }) => {
+    setEditingId(t.id);
+    setEditForm({
+      name: t.name,
+      sport: (t.sport ?? "football") as Sport,
+      season: t.season,
+      logoUrl: t.logoUrl ?? "",
+      description: t.description ?? "",
+      format: (t.format ?? "league") as Format,
+    });
+    setExpandedId(null);
+  };
+
+  const handleEditSave = (id: number) => {
+    if (!editForm.name || !editForm.season) return;
+    updateTournament.mutate({ id, data: { ...editForm } }, {
+      onSuccess: () => { setEditingId(null); invalidate(); },
     });
   };
 
@@ -104,32 +127,105 @@ export function TournamentsTab() {
         <div className="space-y-2">
           {tournaments.map(t => (
             <div key={t.id} className="bg-card rounded-xl border border-border overflow-hidden">
-              <div className="flex items-center gap-3 px-4 py-3">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                  {t.logoUrl ? (
-                    <img src={t.logoUrl} alt={t.name} className="w-6 h-6 object-contain" />
-                  ) : (
-                    <Trophy className="w-4 h-4 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[10px] text-muted-foreground capitalize">{t.sport} · {t.season}</span>
-                    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full border border-border">
-                      <Layers className="w-2.5 h-2.5" />{FORMAT_LABELS[t.format as Format] ?? t.format}
-                    </span>
+              {editingId === t.id ? (
+                /* ── Inline edit form ── */
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-bold text-foreground">Edit Tournament</p>
+                    <button onClick={() => setEditingId(null)} className="text-muted-foreground hover:text-foreground p-1">
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="col-span-2">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Name *</label>
+                      <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                        className="admin-input" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Sport</label>
+                      <select value={editForm.sport} onChange={e => setEditForm(f => ({ ...f, sport: e.target.value as Sport }))} className="admin-input">
+                        <option value="football">Football</option>
+                        <option value="futsal">Futsal</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Season *</label>
+                      <input value={editForm.season} onChange={e => setEditForm(f => ({ ...f, season: e.target.value }))}
+                        className="admin-input" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Format</label>
+                      <select value={editForm.format} onChange={e => setEditForm(f => ({ ...f, format: e.target.value as Format }))} className="admin-input">
+                        <option value="league">League</option>
+                        <option value="group_stage">Group Stage</option>
+                        <option value="knockout">Knockout</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Logo URL</label>
+                      <input value={editForm.logoUrl} onChange={e => setEditForm(f => ({ ...f, logoUrl: e.target.value }))}
+                        placeholder="https://..." className="admin-input" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Description</label>
+                      <input value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                        placeholder="Optional" className="admin-input" />
+                    </div>
+                    {editForm.logoUrl && (
+                      <div className="col-span-2 flex items-center gap-3 bg-muted/30 rounded-xl p-2">
+                        <img
+                          src={editForm.logoUrl}
+                          alt="Logo preview"
+                          className="w-10 h-10 object-contain rounded"
+                          onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                        />
+                        <span className="text-[10px] text-muted-foreground">Logo preview</span>
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={() => handleEditSave(t.id)} disabled={updateTournament.isPending}
+                    className="w-full bg-primary text-white rounded-xl py-2.5 text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2">
+                    <Check className="w-4 h-4" />
+                    {updateTournament.isPending ? "Saving..." : "Save Changes"}
+                  </button>
                 </div>
-                <button onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
-                  className={cn("text-muted-foreground hover:text-foreground p-1 transition-colors", expandedId === t.id && "text-primary")}>
-                  <ChevronDown className={cn("w-4 h-4 transition-transform", expandedId === t.id && "rotate-180")} />
-                </button>
-                <button onClick={() => handleDelete(t.id)} className="text-muted-foreground hover:text-red-400 transition-colors p-1">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-              {expandedId === t.id && <StandingsPanel tournamentId={t.id} format={(t.format as Format) ?? "league"} />}
+              ) : (
+                /* ── Normal row ── */
+                <>
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                      {t.logoUrl ? (
+                        <img src={t.logoUrl} alt={t.name} className="w-6 h-6 object-contain"
+                          onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                      ) : (
+                        <Trophy className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{t.name}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[10px] text-muted-foreground capitalize">{t.sport} · {t.season}</span>
+                        <span className="inline-flex items-center gap-0.5 text-[9px] font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full border border-border">
+                          <Layers className="w-2.5 h-2.5" />{FORMAT_LABELS[t.format as Format] ?? t.format}
+                        </span>
+                      </div>
+                    </div>
+                    <button onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
+                      className={cn("text-muted-foreground hover:text-foreground p-1 transition-colors", expandedId === t.id && "text-primary")}>
+                      <ChevronDown className={cn("w-4 h-4 transition-transform", expandedId === t.id && "rotate-180")} />
+                    </button>
+                    <button onClick={() => handleEditStart(t)}
+                      className="text-muted-foreground hover:text-blue-400 transition-colors p-1" title="Edit tournament">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDelete(t.id)} className="text-muted-foreground hover:text-red-400 transition-colors p-1">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {expandedId === t.id && <StandingsPanel tournamentId={t.id} format={(t.format as Format) ?? "league"} />}
+                </>
+              )}
             </div>
           ))}
         </div>

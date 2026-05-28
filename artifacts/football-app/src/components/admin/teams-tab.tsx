@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useListTeams, useCreateTeam, useDeleteTeam, getListTeamsQueryKey } from "@workspace/api-client-react";
+import { useListTeams, useCreateTeam, useUpdateTeam, useDeleteTeam, getListTeamsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trash2, Plus, X, ChevronDown } from "lucide-react";
+import { Trash2, Plus, X, ChevronDown, Pencil, Check } from "lucide-react";
 import { TeamLogo } from "@/components/team-logo";
 import { SquadPanel } from "@/components/admin/squad-panel";
 import { cn } from "@/lib/utils";
@@ -16,9 +16,12 @@ export function TeamsTab() {
   const [form, setForm] = useState({ ...EMPTY });
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({ ...EMPTY });
 
   const { data: teams, isLoading } = useListTeams(sport === "all" ? undefined : { sport });
   const createTeam = useCreateTeam();
+  const updateTeam = useUpdateTeam();
   const deleteTeam = useDeleteTeam();
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getListTeamsQueryKey() });
@@ -28,6 +31,19 @@ export function TeamsTab() {
     if (!form.name || !form.shortName || !form.country) return;
     createTeam.mutate({ data: { ...form } }, {
       onSuccess: () => { setForm({ ...EMPTY }); setShowForm(false); invalidate(); },
+    });
+  };
+
+  const handleEditStart = (team: typeof EMPTY & { id: number }) => {
+    setEditingId(team.id);
+    setEditForm({ name: team.name, shortName: team.shortName, country: team.country, logoUrl: team.logoUrl ?? "", sport: (team.sport ?? "football") as Sport });
+    setExpandedId(null);
+  };
+
+  const handleEditSave = (id: number) => {
+    if (!editForm.name || !editForm.shortName || !editForm.country) return;
+    updateTeam.mutate({ id, data: { ...editForm } }, {
+      onSuccess: () => { setEditingId(null); invalidate(); },
     });
   };
 
@@ -102,31 +118,87 @@ export function TeamsTab() {
         <div className="space-y-2">
           {teams.map(team => (
             <div key={team.id} className="bg-card rounded-xl border border-border overflow-hidden">
-              {/* Team row */}
-              <div className="flex items-center gap-3 px-4 py-3">
-                <TeamLogo url={team.logoUrl} name={team.name} shortName={team.shortName} className="w-8 h-8 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{team.name}</p>
-                  <p className="text-xs text-muted-foreground">{team.shortName} · {team.country} · <span className="capitalize">{team.sport}</span></p>
+              {editingId === team.id ? (
+                /* ── Inline edit form ── */
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-bold text-foreground">Edit Team</p>
+                    <button onClick={() => setEditingId(null)} className="text-muted-foreground hover:text-foreground p-1">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Name *</label>
+                      <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                        className="admin-input" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Short Name *</label>
+                      <input value={editForm.shortName} onChange={e => setEditForm(f => ({ ...f, shortName: e.target.value }))}
+                        className="admin-input" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Country *</label>
+                      <input value={editForm.country} onChange={e => setEditForm(f => ({ ...f, country: e.target.value }))}
+                        className="admin-input" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Sport</label>
+                      <select value={editForm.sport} onChange={e => setEditForm(f => ({ ...f, sport: e.target.value as Sport }))} className="admin-input">
+                        <option value="football">Football</option>
+                        <option value="futsal">Futsal</option>
+                      </select>
+                    </div>
+                    <div className="col-span-2">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Logo URL</label>
+                      <input value={editForm.logoUrl} onChange={e => setEditForm(f => ({ ...f, logoUrl: e.target.value }))}
+                        placeholder="https://..." className="admin-input" />
+                      {editForm.logoUrl && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <TeamLogo url={editForm.logoUrl} name={editForm.name} shortName={editForm.shortName || "?"} className="w-10 h-10" />
+                          <span className="text-[10px] text-muted-foreground">Preview</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <button onClick={() => handleEditSave(team.id)} disabled={updateTeam.isPending}
+                    className="w-full bg-primary text-white rounded-xl py-2.5 text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2">
+                    <Check className="w-4 h-4" />
+                    {updateTeam.isPending ? "Saving..." : "Save Changes"}
+                  </button>
                 </div>
-                <button
-                  onClick={() => setExpandedId(expandedId === team.id ? null : team.id)}
-                  className={cn("flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-xl border transition-all",
-                    expandedId === team.id
-                      ? "bg-primary text-white border-primary"
-                      : "bg-muted text-muted-foreground border-border hover:border-primary/40"
-                  )}>
-                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", expandedId === team.id && "rotate-180")} />
-                  Squad
-                </button>
-                <button onClick={() => handleDelete(team.id)} className="text-muted-foreground hover:text-red-400 transition-colors p-1 ml-1">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Squad panel — expands inline */}
-              {expandedId === team.id && (
-                <SquadPanel teamId={team.id} teamName={team.name} />
+              ) : (
+                /* ── Normal row ── */
+                <>
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <TeamLogo url={team.logoUrl} name={team.name} shortName={team.shortName} className="w-8 h-8 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{team.name}</p>
+                      <p className="text-xs text-muted-foreground">{team.shortName} · {team.country} · <span className="capitalize">{team.sport}</span></p>
+                    </div>
+                    <button
+                      onClick={() => setExpandedId(expandedId === team.id ? null : team.id)}
+                      className={cn("flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-xl border transition-all",
+                        expandedId === team.id
+                          ? "bg-primary text-white border-primary"
+                          : "bg-muted text-muted-foreground border-border hover:border-primary/40"
+                      )}>
+                      <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", expandedId === team.id && "rotate-180")} />
+                      Squad
+                    </button>
+                    <button onClick={() => handleEditStart(team as typeof EMPTY & { id: number })}
+                      className="text-muted-foreground hover:text-blue-400 transition-colors p-1 ml-1" title="Edit team">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDelete(team.id)} className="text-muted-foreground hover:text-red-400 transition-colors p-1">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {expandedId === team.id && (
+                    <SquadPanel teamId={team.id} teamName={team.name} />
+                  )}
+                </>
               )}
             </div>
           ))}
