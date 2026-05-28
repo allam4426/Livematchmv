@@ -403,8 +403,13 @@ export function EventsTab() {
   };
 
   const handleSecondHalf = () => {
-    updateMatch.mutate({ id: selectedMatchId, data: { status: "live", minute: "46" } },
-      { onSuccess: invalidateMatches });
+    // Football halves are 45 min each; futsal halves are 20 min each
+    const halfDuration = match?.sport === "futsal" ? 20 : 45;
+    resetWatch(halfDuration);
+    updateMatch.mutate(
+      { id: selectedMatchId, data: { status: "live", minute: String(halfDuration) } },
+      { onSuccess: invalidateMatches }
+    );
   };
 
   const handleFullTime = () => {
