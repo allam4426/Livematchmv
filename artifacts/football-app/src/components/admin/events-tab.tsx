@@ -15,6 +15,26 @@ type EventType =
   | "penalty_awarded" | "penalty_goal" | "penalty_missed"
   | "substitution" | "mvp";
 
+/* ─── stoppage-time helpers ─── */
+const HALF_BREAKS = [45, 90, 105, 120]; // standard break points
+
+function calcDisplay(totalSeconds: number) {
+  const totalMin = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  const ss = String(secs).padStart(2, "0");
+
+  // Find the last break point we've passed
+  const base = [...HALF_BREAKS].reverse().find(b => totalMin >= b);
+  if (base !== undefined) {
+    const extra = totalMin - base;
+    const display = extra > 0 ? `${base}+${extra}:${ss}` : `${base}:${ss}`;
+    const minuteStr = extra > 0 ? `${base}+${extra}` : String(totalMin + 1);
+    return { display, minuteStr, isStoppage: extra > 0, base, extra };
+  }
+  const mm = String(totalMin).padStart(2, "0");
+  return { display: `${mm}:${ss}`, minuteStr: String(totalMin + 1), isStoppage: false, base: null, extra: 0 };
+}
+
 /* ─── stopwatch ─── */
 function useMatchStopwatch(isRunning: boolean, matchId: number, initialMinute: string | null | undefined) {
   const initRef = useRef(0);
@@ -51,11 +71,14 @@ function useMatchStopwatch(isRunning: boolean, matchId: number, initialMinute: s
     setElapsed(toSeconds);
   };
 
-  const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
-  const ss = String(elapsed % 60).padStart(2, "0");
-  const minuteNum = Math.floor(elapsed / 60) + 1;
+  const addMinute = () => {
+    const next = elapsed + 60;
+    initRef.current = next;
+    startWallRef.current = isRunning ? Date.now() - next * 1000 : null;
+    setElapsed(next);
+  };
 
-  return { mm, ss, minuteStr: String(minuteNum), reset };
+  return { ...calcDisplay(elapsed), reset, addMinute };
 }
 
 /* ─── event log modal ─── */
@@ -318,7 +341,7 @@ export function EventsTab() {
   }, [match?.id, match?.homeScore, match?.awayScore]);
 
   // Stopwatch
-  const { mm, ss, minuteStr, reset: resetWatch } = useMatchStopwatch(
+  const { display: watchDisplay, minuteStr, isStoppage, reset: resetWatch, addMinute } = useMatchStopwatch(
     isLive && !isHalfTime,
     selectedMatchId,
     match?.minute
@@ -464,14 +487,25 @@ export function EventsTab() {
                     </div>
                   ) : (
                     /* Running stopwatch + controls */
-                    <div className="flex items-center gap-3">
-                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
                       <button
                         onClick={() => { setShowSetMinute(true); setSetMinuteInput(""); }}
-                        className="font-mono text-xl font-black text-red-400 tracking-widest hover:text-red-300 transition-colors"
-                        title="Tap to set minute">
-                        {mm}:{ss}
+                        title="Tap to set minute"
+                        className={cn(
+                          "font-mono text-xl font-black tracking-widest hover:opacity-80 transition-opacity",
+                          isStoppage ? "text-amber-400" : "text-red-400"
+                        )}>
+                        {watchDisplay}
                       </button>
+                      {/* +1 min button */}
+                      <button
+                        onClick={addMinute}
+                        title="Add 1 minute (stoppage time)"
+                        className="flex items-center gap-0.5 bg-amber-500/20 hover:bg-amber-500/35 border border-amber-500/30 text-amber-400 font-black text-[11px] px-2 py-1 rounded-lg transition-colors">
+                        +1<span className="text-[9px] font-semibold opacity-70 ml-0.5">min</span>
+                      </button>
+                      {/* Reset */}
                       <button
                         onClick={handleResetWatch}
                         title="Reset to 00:00"
