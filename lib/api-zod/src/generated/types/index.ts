@@ -54,6 +54,8 @@ export * from './streamInput';
 export * from './streamInputQuality';
 export * from './streamQuality';
 export * from './team';
+export * from './teamForm';
+export * from './teamFormFormItem';
 export * from './teamInput';
 export * from './teamInputSport';
 export * from './teamSport';

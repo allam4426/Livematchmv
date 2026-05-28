@@ -48,6 +48,7 @@ import type {
   Stream,
   StreamInput,
   Team,
+  TeamForm,
   TeamInput,
   TeamUpdate,
   Tournament,
@@ -737,6 +738,83 @@ export const useDeleteTeam = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getDeleteTeamMutationOptions(options));
     }
+
+export const getGetTeamFormUrl = (id: number,) => {
+
+
+
+
+  return `/api/teams/${id}/form`
+}
+
+/**
+ * @summary Get last 5 match results for a team (across all competitions)
+ */
+export const getTeamForm = async (id: number, options?: RequestInit): Promise<TeamForm> => {
+
+  return customFetch<TeamForm>(getGetTeamFormUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTeamFormQueryKey = (id: number,) => {
+    return [
+    `/api/teams/${id}/form`
+    ] as const;
+    }
+
+
+export const getGetTeamFormQueryOptions = <TData = Awaited<ReturnType<typeof getTeamForm>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamForm>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTeamFormQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTeamForm>>> = ({ signal }) => getTeamForm(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTeamForm>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTeamFormQueryResult = NonNullable<Awaited<ReturnType<typeof getTeamForm>>>
+export type GetTeamFormQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get last 5 match results for a team (across all competitions)
+ */
+
+export function useGetTeamForm<TData = Awaited<ReturnType<typeof getTeamForm>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamForm>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTeamFormQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetTeamSquadUrl = (id: number,) => {
 

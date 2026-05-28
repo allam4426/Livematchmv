@@ -15,6 +15,19 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
+/* ─── form dot ─── */
+function FormDot({ result }: { result: string }) {
+  const colors: Record<string, string> = { W: "bg-emerald-500", D: "bg-amber-400", L: "bg-red-500" };
+  return (
+    <span className={cn(
+      "w-4 h-4 rounded-full inline-flex items-center justify-center text-[8px] font-black text-white shrink-0",
+      colors[result] ?? "bg-white/10"
+    )}>
+      {result}
+    </span>
+  );
+}
+
 /* ─── constants ─── */
 const FORMAT_LABELS: Record<string, string> = {
   league: "League",
@@ -555,14 +568,16 @@ export default function TournamentPage() {
                         <th className="text-center font-semibold pb-2 w-7">W</th>
                         <th className="text-center font-semibold pb-2 w-7">D</th>
                         <th className="text-center font-semibold pb-2 w-7">L</th>
-                        <th className="text-center font-semibold pb-2 w-8">GF</th>
-                        <th className="text-center font-semibold pb-2 w-8">GA</th>
                         <th className="text-center font-semibold pb-2 w-8">GD</th>
                         <th className="text-center font-semibold pb-2 w-8 text-primary">Pts</th>
+                        <th className="text-center font-semibold pb-2">Form</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((row, idx) => (
+                      {rows.map((row, idx) => {
+                        const guide = row.formGuide ?? [];
+                        const empties = Math.max(0, 5 - guide.length);
+                        return (
                         <tr
                           key={row.position}
                           className={cn(
@@ -579,8 +594,8 @@ export default function TournamentPage() {
                                 shortName={row.team.shortName}
                                 className="w-4 h-4"
                               />
-                              <span className="font-semibold text-foreground truncate max-w-[90px]">
-                                {row.team.name}
+                              <span className="font-semibold text-foreground truncate max-w-[80px]">
+                                {row.team.shortName || row.team.name}
                               </span>
                             </div>
                           </td>
@@ -588,14 +603,21 @@ export default function TournamentPage() {
                           <td className="py-2 text-center text-muted-foreground">{row.won}</td>
                           <td className="py-2 text-center text-muted-foreground">{row.drawn}</td>
                           <td className="py-2 text-center text-muted-foreground">{row.lost}</td>
-                          <td className="py-2 text-center text-muted-foreground">{row.goalsFor}</td>
-                          <td className="py-2 text-center text-muted-foreground">{row.goalsAgainst}</td>
                           <td className="py-2 text-center text-muted-foreground">
                             {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
                           </td>
                           <td className="py-2 text-center font-black text-primary">{row.points}</td>
+                          <td className="py-2">
+                            <div className="flex items-center gap-0.5 justify-center">
+                              {Array.from({ length: empties }).map((_, j) => (
+                                <span key={`e${j}`} className="w-4 h-4 rounded-full border border-white/15 inline-block" />
+                              ))}
+                              {guide.map((r, j) => <FormDot key={j} result={r} />)}
+                            </div>
+                          </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

@@ -1,5 +1,5 @@
 import {
-  useGetMatch, useGetMatchLineup, useGetTournamentStandings,
+  useGetMatch, useGetMatchLineup, useGetTournamentStandings, useGetTeamForm,
   getGetMatchQueryKey, getGetMatchLineupQueryKey, getGetTournamentStandingsQueryKey,
   type MatchDetail,
 } from "@workspace/api-client-react";
@@ -39,6 +39,19 @@ function FormDot({ result }: { result: string }) {
 
 function EmptyDot() {
   return <span className="w-4 h-4 rounded-full border border-white/20 inline-block" />;
+}
+
+function TeamFormDots({ teamId }: { teamId: number }) {
+  const { data } = useGetTeamForm(teamId, { query: { enabled: !!teamId, queryKey: ["teamForm", teamId] } });
+  const form = data?.form ?? [];
+  const empties = Math.max(0, 5 - form.length);
+  if (form.length === 0 && empties === 5) return null;
+  return (
+    <div className="flex items-center gap-1">
+      {Array.from({ length: empties }).map((_, i) => <EmptyDot key={`e${i}`} />)}
+      {form.map((r, i) => <FormDot key={i} result={r} />)}
+    </div>
+  );
 }
 
 /* ─── tabs ─── */
@@ -351,6 +364,7 @@ export default function MatchDetails() {
           <div className="flex flex-col items-center gap-2 flex-1">
             <TeamLogo url={match.homeTeam.logoUrl} name={match.homeTeam.name} shortName={match.homeTeam.shortName} className="w-16 h-16" />
             <span className="text-sm font-bold text-white text-center leading-tight">{match.homeTeam.name}</span>
+            <TeamFormDots teamId={match.homeTeam.id} />
           </div>
           <div className="flex flex-col items-center justify-center px-3 shrink-0 gap-1">
             {(isLive || isFinished) ? (
@@ -367,6 +381,7 @@ export default function MatchDetails() {
           <div className="flex flex-col items-center gap-2 flex-1">
             <TeamLogo url={match.awayTeam.logoUrl} name={match.awayTeam.name} shortName={match.awayTeam.shortName} className="w-16 h-16" />
             <span className="text-sm font-bold text-white text-center leading-tight">{match.awayTeam.name}</span>
+            <TeamFormDots teamId={match.awayTeam.id} />
           </div>
         </div>
 

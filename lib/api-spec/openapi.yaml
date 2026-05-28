@@ -183,6 +183,27 @@ paths:
         "204":
           description: Deleted
 
+  /teams/{id}/form:
+    get:
+      operationId: getTeamForm
+      tags: [teams]
+      summary: Get last 5 match results for a team (across all competitions)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Team form guide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamForm"
+        "404":
+          description: Team not found
+
   /teams/{id}/squad:
     get:
       operationId: getTeamSquad
@@ -911,6 +932,19 @@ components:
       properties:
         authenticated:
           type: boolean
+
+    TeamForm:
+      type: object
+      required: [teamId, form]
+      properties:
+        teamId:
+          type: integer
+        form:
+          type: array
+          description: Last 5 results, oldest first (W/D/L)
+          items:
+            type: string
+            enum: [W, D, L]
 
     Team:
       type: object

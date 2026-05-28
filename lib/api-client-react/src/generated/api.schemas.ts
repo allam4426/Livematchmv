@@ -17,6 +17,21 @@ export interface AdminAuthStatus {
   authenticated: boolean;
 }
 
+export type TeamFormFormItem = typeof TeamFormFormItem[keyof typeof TeamFormFormItem];
+
+
+export const TeamFormFormItem = {
+  W: 'W',
+  D: 'D',
+  L: 'L',
+} as const;
+
+export interface TeamForm {
+  teamId: number;
+  /** Last 5 results, oldest first (W/D/L) */
+  form: TeamFormFormItem[];
+}
+
 export type TeamSport = typeof TeamSport[keyof typeof TeamSport];
 
 

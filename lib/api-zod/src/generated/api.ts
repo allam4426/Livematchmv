@@ -125,6 +125,19 @@ export const DeleteTeamParams = zod.object({
 
 
 /**
+ * @summary Get last 5 match results for a team (across all competitions)
+ */
+export const GetTeamFormParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetTeamFormResponse = zod.object({
+  "teamId": zod.number(),
+  "form": zod.array(zod.enum(['W', 'D', 'L'])).describe('Last 5 results, oldest first (W\/D\/L)')
+})
+
+
+/**
  * @summary Get a team's squad
  */
 export const GetTeamSquadParams = zod.object({
