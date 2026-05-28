@@ -1,10 +1,17 @@
+import { useEffect } from "react";
 import { useListLiveMatches } from "@workspace/api-client-react";
 import { MatchCard } from "@/components/match-card";
 import { MatchRow } from "@/components/match-row";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function LiveMatches() {
-  const { data: matches, isLoading } = useListLiveMatches();
+  const { data: matches, isLoading, refetch } = useListLiveMatches();
+
+  // Poll every 30 s so the live minute counter stays current
+  useEffect(() => {
+    const id = setInterval(() => refetch(), 30_000);
+    return () => clearInterval(id);
+  }, [refetch]);
 
   return (
     <div className="pb-6">

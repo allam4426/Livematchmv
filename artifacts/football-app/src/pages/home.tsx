@@ -2,7 +2,7 @@ import { useListLiveMatches, useListMatches, useListCompetitions, useListActiveT
 import { MatchCard } from "@/components/match-card";
 import { MatchRow } from "@/components/match-row";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   addDays, format, isToday, isSameDay,
   startOfMonth, endOfMonth, eachDayOfInterval, getDay,
@@ -106,8 +106,14 @@ export default function Home() {
   const [showCalendar, setShowCalendar] = useState(false);
   const stripRef = useRef<HTMLDivElement>(null);
 
-  const { data: liveMatches, isLoading: liveLoading } = useListLiveMatches();
-  const { data: allMatches, isLoading: matchesLoading } = useListMatches({ limit: 500 });
+  const { data: liveMatches, isLoading: liveLoading, refetch: refetchLive } = useListLiveMatches();
+  const { data: allMatches, isLoading: matchesLoading, refetch: refetchMatches } = useListMatches({ limit: 500 });
+
+  // Poll every 30 s so live scores and minutes stay current
+  useEffect(() => {
+    const id = setInterval(() => { refetchLive(); refetchMatches(); }, 30_000);
+    return () => clearInterval(id);
+  }, [refetchLive, refetchMatches]);
   const { data: competitions } = useListCompetitions();
   const { data: activeTournaments, isLoading: tournamentsLoading } = useListActiveTournaments();
 

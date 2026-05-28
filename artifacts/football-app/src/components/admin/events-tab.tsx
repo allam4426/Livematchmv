@@ -375,6 +375,17 @@ export function EventsTab() {
     match?.minute
   );
 
+  // Auto-save the running minute to DB every 30 s so the public site stays in sync
+  const minuteStrRef = useRef(minuteStr);
+  minuteStrRef.current = minuteStr;
+  useEffect(() => {
+    if (!isLive || isHalfTime) return;
+    const id = setInterval(() => {
+      updateMatch.mutate({ id: selectedMatchId, data: { minute: minuteStrRef.current } });
+    }, 30_000);
+    return () => clearInterval(id);
+  }, [isLive, isHalfTime, selectedMatchId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleResetWatch = () => {
     resetWatch(0);
     setShowSetMinute(false);
