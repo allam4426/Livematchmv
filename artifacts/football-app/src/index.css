@@ -123,6 +123,19 @@ html {
     background: linear-gradient(135deg, #1a5c72 0%, #0d3a4a 50%, #0a2d3c 100%);
   }
 
+  /* Spotlight card gradient — deep navy with red/crimson accent */
+  .spotlight-gradient {
+    background: linear-gradient(145deg, #1e1230 0%, #15091f 40%, #0f0d1a 70%, #120a14 100%);
+    border-color: rgba(220, 38, 38, 0.15);
+  }
+  .spotlight-gradient::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(220, 38, 38, 0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
   /* Subtle row hover */
   .match-row:hover {
     background-color: hsl(213 42% 14%);

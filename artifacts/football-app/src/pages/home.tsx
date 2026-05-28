@@ -3,6 +3,7 @@ import { MatchCard } from "@/components/match-card";
 import { MatchRow } from "@/components/match-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BannerSlot } from "@/components/banner-slot";
+import { SpotlightCard } from "@/components/spotlight-card";
 import { useState, useRef, useEffect } from "react";
 import {
   addDays, format, isToday, isSameDay,
@@ -122,7 +123,13 @@ export default function Home() {
     addDays(selectedDate, i - STRIP_BEFORE)
   );
 
-  const featuredLive = liveMatches?.find(m => m.featured) || liveMatches?.[0];
+  // Spotlight: any featured match (live, scheduled, or finished)
+  const spotlightMatch = allMatches?.find(m => m.featured)
+    ?? liveMatches?.find(m => m.featured)
+    ?? null;
+
+  // Fallback hero: first live match (if no spotlight set)
+  const featuredLive = spotlightMatch ? null : (liveMatches?.[0] ?? null);
 
   const filteredMatches = allMatches?.filter(m => {
     const dateMatch = isSameDay(new Date(m.kickoffAt), selectedDate);
@@ -151,14 +158,16 @@ export default function Home() {
     <div className="pb-6">
       <BannerSlot position="top_home" />
 
-      {/* Featured Live Match */}
-      <div className="px-4 pt-4 pb-4">
-        {liveLoading ? (
-          <Skeleton className="h-52 w-full rounded-2xl" />
+      {/* Spotlight / Featured hero */}
+      <div className="pt-4 pb-4">
+        {(liveLoading || matchesLoading) ? (
+          <div className="px-4"><Skeleton className="h-56 w-full rounded-2xl" /></div>
+        ) : spotlightMatch ? (
+          <SpotlightCard match={spotlightMatch} />
         ) : featuredLive ? (
-          <MatchCard match={featuredLive} />
+          <div className="px-4"><MatchCard match={featuredLive} /></div>
         ) : (
-          <div className="h-40 rounded-2xl bg-card border border-border flex flex-col items-center justify-center text-muted-foreground gap-2">
+          <div className="mx-4 h-40 rounded-2xl bg-card border border-border flex flex-col items-center justify-center text-muted-foreground gap-2">
             <Trophy className="w-7 h-7 opacity-30" />
             <p className="text-sm">No live matches right now</p>
           </div>
