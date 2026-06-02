@@ -22,6 +22,14 @@ type EventType =
  *  - When paused (half-time), initRef saves current position so the clock
  *    resumes correctly when the second half starts — no jump back to 00:00.
  * ─────────────────────────────────────────────────────────────────────────── */
+function parseMinuteToSeconds(minute: string | null | undefined): number {
+  if (!minute) return 0;
+  if (minute === "HT" || minute === "ET_HT" || minute === "PSO") return 0;
+  const n = parseInt(minute.split("+")[0], 10);
+  if (isNaN(n)) return 0;
+  return Math.max(0, n - 1) * 60;
+}
+
 function useMatchStopwatch(isRunning: boolean, matchId: number, initialMinute: string | null | undefined) {
   const initRef = useRef(0);
   const elapsedRef = useRef(0);          // always tracks live elapsed for save-on-pause
@@ -36,8 +44,7 @@ function useMatchStopwatch(isRunning: boolean, matchId: number, initialMinute: s
 
   // Re-initialize when the selected match changes
   useEffect(() => {
-    const n = initialMinute ? parseInt(initialMinute, 10) : 0;
-    const init = isNaN(n) ? 0 : Math.max(0, n - 1) * 60;
+    const init = parseMinuteToSeconds(initialMinute);
     initRef.current = init;
     setElapsed(init);
     setStoppageBase(null);
@@ -337,6 +344,14 @@ export function EventsTab() {
   const isLive = match?.status === "live";
   const isFinished = match?.status === "finished";
   const isHalfTime = match?.minute === "HT";
+  const isETHalfTime = match?.minute === "ET_HT";
+  const isPSO = match?.minute === "PSO";
+  const minuteNum = (() => {
+    const m = match?.minute;
+    if (!m || m === "HT" || m === "ET_HT" || m === "PSO") return 0;
+    return parseInt(m.split("+")[0], 10) || 0;
+  })();
+  const isETPhase = minuteNum > 90;
 
   const { data: events, isLoading: evLoading } = useListMatchEvents(selectedMatchId, {
     query: { enabled: !!selectedMatchId, queryKey: getListMatchEventsQueryKey(selectedMatchId), refetchInterval: isLive ? 15000 : false },
@@ -369,8 +384,9 @@ export function EventsTab() {
   }, [match?.id, match?.homeScore, match?.awayScore]);
 
   // Stopwatch
+  const watchRunning = isLive && !isHalfTime && !isETHalfTime && !isPSO;
   const { display: watchDisplay, minuteStr, isStoppage, reset: resetWatch, addMinute } = useMatchStopwatch(
-    isLive && !isHalfTime,
+    watchRunning,
     selectedMatchId,
     match?.minute
   );
@@ -379,7 +395,7 @@ export function EventsTab() {
   const minuteStrRef = useRef(minuteStr);
   minuteStrRef.current = minuteStr;
   useEffect(() => {
-    if (!isLive || isHalfTime) return;
+    if (!isLive || isHalfTime || isETHalfTime || isPSO) return;
     const id = setInterval(() => {
       updateMatch.mutate({ id: selectedMatchId, data: { minute: minuteStrRef.current } });
     }, 30_000);
@@ -441,6 +457,34 @@ export function EventsTab() {
       { onSuccess: invalidateMatches });
   };
 
+  const handleExtraTime = () => {
+    const etStart = match?.sport === "futsal" ? 40 : 90;
+    resetWatch(etStart);
+    updateMatch.mutate(
+      { id: selectedMatchId, data: { status: "live", minute: String(etStart + 1) } },
+      { onSuccess: invalidateMatches }
+    );
+  };
+
+  const handleETHalfTime = () => {
+    updateMatch.mutate({ id: selectedMatchId, data: { status: "live", minute: "ET_HT" } },
+      { onSuccess: invalidateMatches });
+  };
+
+  const handleETSecondHalf = () => {
+    const etHalf2Start = match?.sport === "futsal" ? 45 : 105;
+    resetWatch(etHalf2Start);
+    updateMatch.mutate(
+      { id: selectedMatchId, data: { status: "live", minute: String(etHalf2Start + 1) } },
+      { onSuccess: invalidateMatches }
+    );
+  };
+
+  const handlePenaltyShootout = () => {
+    updateMatch.mutate({ id: selectedMatchId, data: { status: "live", minute: "PSO" } },
+      { onSuccess: invalidateMatches });
+  };
+
   /* log event */
   const handleLogEvent = (data: Parameters<typeof createEvent.mutate>[0]["data"]) => {
     createEvent.mutate({ id: selectedMatchId, data }, {
@@ -489,12 +533,13 @@ export function EventsTab() {
 
   /* event tile config */
   const EVENT_TILES: { type: EventType; label: string; bg: string; icon: string }[] = [
-    { type: "goal",        label: "Goal",         bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "⚽" },
-    { type: "yellow_card", label: "Yellow Card",   bg: "bg-[#7a5800] hover:bg-[#8f6600]", icon: "🟨" },
-    { type: "red_card",    label: "Red Card",      bg: "bg-[#6b1111] hover:bg-[#801313]", icon: "🟥" },
-    { type: "substitution",label: "Substitution",  bg: "bg-[#0d3060] hover:bg-[#104080]", icon: "🔄" },
-    { type: "own_goal",    label: "Own Goal",      bg: "bg-[#5a2d00] hover:bg-[#6e3700]", icon: "↩⚽" },
-    { type: "penalty_goal",label: "Penalty",       bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "P⚽" },
+    { type: "goal",           label: "Goal",           bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "⚽" },
+    { type: "yellow_card",    label: "Yellow Card",    bg: "bg-[#7a5800] hover:bg-[#8f6600]", icon: "🟨" },
+    { type: "red_card",       label: "Red Card",       bg: "bg-[#6b1111] hover:bg-[#801313]", icon: "🟥" },
+    { type: "substitution",   label: "Substitution",   bg: "bg-[#0d3060] hover:bg-[#104080]", icon: "🔄" },
+    { type: "own_goal",       label: "Own Goal",       bg: "bg-[#5a2d00] hover:bg-[#6e3700]", icon: "↩⚽" },
+    { type: "penalty_goal",   label: "Pen. Goal",      bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "P⚽" },
+    { type: "penalty_missed", label: "Pen. Missed",    bg: "bg-[#4a1a1a] hover:bg-[#5a2020]", icon: "P✗" },
   ];
 
   return (
@@ -591,6 +636,10 @@ export function EventsTab() {
                     </div>
                   )}
                 </>
+              ) : isPSO ? (
+                <span className="text-sm font-black text-purple-400 tracking-widest uppercase">🥅 Penalties</span>
+              ) : isETHalfTime ? (
+                <span className="text-sm font-black text-orange-400 tracking-widest uppercase">ET Half Time</span>
               ) : isHalfTime ? (
                 <span className="text-sm font-black text-amber-400 tracking-widest uppercase">Half Time</span>
               ) : isFinished ? (
@@ -629,29 +678,71 @@ export function EventsTab() {
             </div>
 
             {/* Status buttons */}
-            <div className="px-4 pb-4">
+            <div className="px-4 pb-4 space-y-2">
               {isFinished ? (
                 <button onClick={handleRestart}
                   className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98]">
                   <RotateCcw className="w-4 h-4" />
                   Restart Match
                 </button>
+              ) : isPSO ? (
+                <>
+                  <p className="text-[10px] font-bold text-purple-400/70 uppercase tracking-widest text-center">Penalty Shootout</p>
+                  <button onClick={handleFullTime}
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5">
+                    <span className="text-base">⏹</span> End Match (PSO)
+                  </button>
+                </>
+              ) : isETHalfTime ? (
+                <button onClick={handleETSecondHalf}
+                  className="w-full bg-orange-700 hover:bg-orange-600 text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98]">
+                  ET 2nd Half Started
+                </button>
               ) : isHalfTime ? (
                 <button onClick={handleSecondHalf}
                   className="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98]">
                   2nd Half Started
                 </button>
+              ) : isLive && isETPhase ? (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={handleETHalfTime}
+                      className="bg-[#1a3a4a] hover:bg-[#1f4455] text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5">
+                      <span className="text-base">⏸</span> ET Half
+                    </button>
+                    <button onClick={handleFullTime}
+                      className="bg-primary hover:bg-primary/90 text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5">
+                      <span className="text-base">⏹</span> ET Full Time
+                    </button>
+                  </div>
+                  <button onClick={handlePenaltyShootout}
+                    className="w-full bg-purple-800 hover:bg-purple-700 text-white font-black py-3 rounded-2xl text-sm transition-all active:scale-[0.98]">
+                    🥅 Penalty Shootout
+                  </button>
+                </>
               ) : isLive ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={handleHalfTime}
-                    className="bg-[#1a3a4a] hover:bg-[#1f4455] text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5">
-                    <span className="text-base">⏸</span> Half Time
-                  </button>
-                  <button onClick={handleFullTime}
-                    className="bg-primary hover:bg-primary/90 text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5">
-                    <span className="text-base">⏹</span> Full Time
-                  </button>
-                </div>
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={handleHalfTime}
+                      className="bg-[#1a3a4a] hover:bg-[#1f4455] text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5">
+                      <span className="text-base">⏸</span> Half Time
+                    </button>
+                    <button onClick={handleFullTime}
+                      className="bg-primary hover:bg-primary/90 text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-1.5">
+                      <span className="text-base">⏹</span> Full Time
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={handleExtraTime}
+                      className="bg-orange-800/60 hover:bg-orange-700/70 border border-orange-500/30 text-orange-300 font-black py-2.5 rounded-2xl text-xs transition-all active:scale-[0.98]">
+                      ⏱ Extra Time
+                    </button>
+                    <button onClick={handlePenaltyShootout}
+                      className="bg-purple-800/60 hover:bg-purple-700/70 border border-purple-500/30 text-purple-300 font-black py-2.5 rounded-2xl text-xs transition-all active:scale-[0.98]">
+                      🥅 Penalties
+                    </button>
+                  </div>
+                </>
               ) : (
                 <button onClick={handleRestart}
                   className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-3.5 rounded-2xl text-sm transition-all active:scale-[0.98]">

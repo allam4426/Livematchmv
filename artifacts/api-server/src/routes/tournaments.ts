@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, tournamentsTable, matchesTable, teamsTable } from "@workspace/db";
-import { eq, and, count } from "drizzle-orm";
+import { db, tournamentsTable, matchesTable, teamsTable, matchEventsTable } from "@workspace/db";
+import { eq, and, count, inArray } from "drizzle-orm";
 import {
   CreateTournamentBody,
   UpdateTournamentBody,
@@ -230,6 +230,61 @@ router.get("/tournaments/:id/standings", async (req, res) => {
     const standings = computeStandings(allMatches);
     res.json({ format, groups: { "League": standings } });
   }
+});
+
+router.get("/tournaments/:id/top-scorers", async (req, res) => {
+  const id = Number(req.params.id);
+
+  const tournamentMatches = await db
+    .select({ id: matchesTable.id })
+    .from(matchesTable)
+    .where(eq(matchesTable.tournamentId, id));
+
+  const matchIds = tournamentMatches.map(m => m.id);
+  if (matchIds.length === 0) {
+    res.json({ topScorers: [], mvp: [] });
+    return;
+  }
+
+  const events = await db
+    .select({ ev: matchEventsTable, team: teamsTable })
+    .from(matchEventsTable)
+    .innerJoin(teamsTable, eq(matchEventsTable.teamId, teamsTable.id))
+    .where(inArray(matchEventsTable.matchId, matchIds));
+
+  type Entry = {
+    playerName: string; playerNumber: string | null;
+    teamId: number; teamName: string; teamShortName: string | null; teamLogoUrl: string | null;
+    goals: number; assists: number;
+  };
+  const scorerMap = new Map<string, Entry>();
+  const mvpMap = new Map<string, Entry>();
+
+  const getKey = (name: string, teamId: number) => `${name}::${teamId}`;
+  const ensure = (map: Map<string, Entry>, name: string, num: string | null, teamId: number, team: typeof teamsTable.$inferSelect): Entry => {
+    const key = getKey(name, teamId);
+    if (!map.has(key)) map.set(key, { playerName: name, playerNumber: num, teamId, teamName: team.name, teamShortName: team.shortName, teamLogoUrl: team.logoUrl, goals: 0, assists: 0 });
+    return map.get(key)!;
+  };
+
+  for (const { ev, team } of events) {
+    if (ev.type === "goal" || ev.type === "penalty_goal") {
+      ensure(scorerMap, ev.playerName, ev.playerNumber ?? null, ev.teamId, team).goals += 1;
+    }
+    if (ev.assistPlayerName && (ev.type === "goal" || ev.type === "penalty_goal")) {
+      ensure(scorerMap, ev.assistPlayerName, null, ev.teamId, team).assists += 1;
+    }
+    if (ev.type === "mvp") {
+      ensure(mvpMap, ev.playerName, ev.playerNumber ?? null, ev.teamId, team);
+    }
+  }
+
+  const topScorers = Array.from(scorerMap.values())
+    .filter(p => p.goals > 0)
+    .sort((a, b) => b.goals - a.goals || b.assists - a.assists)
+    .slice(0, 20);
+
+  res.json({ topScorers, mvp: Array.from(mvpMap.values()) });
 });
 
 export default router;

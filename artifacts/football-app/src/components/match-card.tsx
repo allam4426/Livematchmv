@@ -50,14 +50,15 @@ export function MatchCard({ match }: { match: Match }) {
             </div>
 
             <div className="flex flex-col items-center justify-center px-4 gap-1 shrink-0">
-              {isLive && match.minute && match.minute !== "HT" && (
-                <span className="text-[11px] font-medium text-white/60 mb-1">
-                  {Number(match.minute.split("+")[0]) > 45 ? "H2" : "H1"} · {match.minute}'
-                </span>
-              )}
-              {isLive && match.minute === "HT" && (
-                <span className="text-[11px] font-medium text-yellow-400/80 mb-1">Half Time</span>
-              )}
+              {isLive && match.minute && (() => {
+                const m = match.minute;
+                if (m === "HT") return <span className="text-[11px] font-medium text-yellow-400/80 mb-1">Half Time</span>;
+                if (m === "ET_HT") return <span className="text-[11px] font-medium text-orange-400/80 mb-1">ET Half Time</span>;
+                if (m === "PSO") return <span className="text-[11px] font-bold text-purple-400/90 mb-1">Penalties</span>;
+                const n = Number(m.split("+")[0]);
+                const phase = n > 105 ? "ET 2nd" : n > 90 ? "ET 1st" : n > 45 ? "H2" : "H1";
+                return <span className="text-[11px] font-medium text-white/60 mb-1">{phase} · {m}'</span>;
+              })()}
               {(isLive || match.status === "finished") ? (
                 <div className="text-4xl font-black text-white tabular-nums tracking-tight">
                   {match.homeScore} - {match.awayScore}

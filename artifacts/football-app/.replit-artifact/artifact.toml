@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "FootballLive"
+title = "LivematchMv"
 version = "1.0.0"
 id = "artifacts/football-app"
 router = "path"

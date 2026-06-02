@@ -373,6 +373,44 @@ paths:
         "204":
           description: Deleted
 
+  /squad/{playerId}:
+    get:
+      operationId: getSquadPlayer
+      tags: [teams]
+      summary: Get a single squad player by ID
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Player details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadPlayer"
+
+  /squad/{playerId}/stats:
+    get:
+      operationId: getSquadPlayerStats
+      tags: [teams]
+      summary: Get career stats for a squad player
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Player stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerStats"
+
   /matches/{id}/lineup/auto:
     post:
       operationId: autoFillLineup
@@ -544,6 +582,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TournamentStandings"
+
+  /tournaments/{id}/top-scorers:
+    get:
+      operationId: getTournamentTopScorers
+      tags: [tournaments]
+      summary: Get top scorers and MVP for a tournament
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Top scorers and MVP
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentTopScorers"
 
   /matches:
     get:
@@ -1644,3 +1701,69 @@ components:
           type: integer
         totalCount:
           type: integer
+
+    PlayerStats:
+      type: object
+      required: [player, goals, assists, yellowCards, redCards, ownGoals, appearances]
+      properties:
+        player:
+          $ref: "#/components/schemas/SquadPlayer"
+        team:
+          nullable: true
+          type: object
+          required: [id, name, shortName, logoUrl]
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            shortName:
+              type: ["string", "null"]
+            logoUrl:
+              type: ["string", "null"]
+        goals:
+          type: integer
+        assists:
+          type: integer
+        yellowCards:
+          type: integer
+        redCards:
+          type: integer
+        ownGoals:
+          type: integer
+        appearances:
+          type: integer
+
+    TopScorer:
+      type: object
+      required: [playerName, teamId, teamName, goals, assists]
+      properties:
+        playerName:
+          type: string
+        playerNumber:
+          type: ["string", "null"]
+        teamId:
+          type: integer
+        teamName:
+          type: string
+        teamShortName:
+          type: ["string", "null"]
+        teamLogoUrl:
+          type: ["string", "null"]
+        goals:
+          type: integer
+        assists:
+          type: integer
+
+    TournamentTopScorers:
+      type: object
+      required: [topScorers, mvp]
+      properties:
+        topScorers:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopScorer"
+        mvp:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopScorer"
