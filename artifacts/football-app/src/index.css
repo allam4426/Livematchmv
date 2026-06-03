@@ -46,31 +46,31 @@
 }
 
 :root, .dark {
-  /* Navy blue palette matching MatchFoari */
-  --background: 213 47% 8%;
-  --foreground: 210 40% 95%;
-  --border: 214 35% 16%;
-  --input: 214 35% 16%;
+  /* Navy blue palette — slightly lighter for readability */
+  --background: 213 40% 14%;
+  --foreground: 210 40% 96%;
+  --border: 214 30% 24%;
+  --input: 214 30% 24%;
   --ring: 25 100% 50%;
 
-  --card: 213 42% 11%;
-  --card-foreground: 210 40% 95%;
-  --card-border: 214 35% 17%;
+  --card: 213 38% 18%;
+  --card-foreground: 210 40% 96%;
+  --card-border: 214 30% 26%;
 
-  --popover: 213 42% 13%;
-  --popover-foreground: 210 40% 95%;
-  --popover-border: 214 35% 18%;
+  --popover: 213 38% 20%;
+  --popover-foreground: 210 40% 96%;
+  --popover-border: 214 30% 27%;
 
   /* Primary red — LiveMatch brand color */
   --primary: 0 80% 50%;
   --primary-foreground: 0 0% 100%;
   --primary-border: hsl(0 80% 50% / 0.3);
 
-  --secondary: 214 35% 16%;
-  --secondary-foreground: 210 40% 80%;
+  --secondary: 214 30% 24%;
+  --secondary-foreground: 210 40% 82%;
 
-  --muted: 213 38% 14%;
-  --muted-foreground: 214 25% 55%;
+  --muted: 213 32% 22%;
+  --muted-foreground: 214 22% 65%;
 
   --accent: 214 35% 17%;
   --accent-foreground: 210 40% 95%;
