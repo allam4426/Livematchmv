@@ -363,6 +363,8 @@ export const MatchEventType = {
   penalty_awarded: 'penalty_awarded',
   penalty_goal: 'penalty_goal',
   penalty_missed: 'penalty_missed',
+  ten_meter_goal: 'ten_meter_goal',
+  foul: 'foul',
   substitution: 'substitution',
   mvp: 'mvp',
 } as const;
@@ -484,6 +486,8 @@ export const MatchEventInputType = {
   penalty_awarded: 'penalty_awarded',
   penalty_goal: 'penalty_goal',
   penalty_missed: 'penalty_missed',
+  ten_meter_goal: 'ten_meter_goal',
+  foul: 'foul',
   substitution: 'substitution',
   mvp: 'mvp',
 } as const;

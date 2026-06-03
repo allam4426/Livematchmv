@@ -917,7 +917,7 @@ export const GetMatchResponse = zod.object({
   "events": zod.array(zod.object({
   "id": zod.number(),
   "matchId": zod.number(),
-  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'second_yellow_red', 'own_goal', 'penalty_awarded', 'penalty_goal', 'penalty_missed', 'substitution', 'mvp']),
+  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'second_yellow_red', 'own_goal', 'penalty_awarded', 'penalty_goal', 'penalty_missed', 'ten_meter_goal', 'foul', 'substitution', 'mvp']),
   "minute": zod.string(),
   "teamId": zod.number(),
   "playerName": zod.string(),
@@ -1002,7 +1002,7 @@ export const ListMatchEventsParams = zod.object({
 export const ListMatchEventsResponseItem = zod.object({
   "id": zod.number(),
   "matchId": zod.number(),
-  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'second_yellow_red', 'own_goal', 'penalty_awarded', 'penalty_goal', 'penalty_missed', 'substitution', 'mvp']),
+  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'second_yellow_red', 'own_goal', 'penalty_awarded', 'penalty_goal', 'penalty_missed', 'ten_meter_goal', 'foul', 'substitution', 'mvp']),
   "minute": zod.string(),
   "teamId": zod.number(),
   "playerName": zod.string(),
@@ -1021,7 +1021,7 @@ export const CreateMatchEventParams = zod.object({
 })
 
 export const CreateMatchEventBody = zod.object({
-  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'second_yellow_red', 'own_goal', 'penalty_awarded', 'penalty_goal', 'penalty_missed', 'substitution', 'mvp']),
+  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'second_yellow_red', 'own_goal', 'penalty_awarded', 'penalty_goal', 'penalty_missed', 'ten_meter_goal', 'foul', 'substitution', 'mvp']),
   "minute": zod.string(),
   "teamId": zod.number(),
   "playerName": zod.string(),
@@ -1040,7 +1040,7 @@ export const UpdateMatchEventParams = zod.object({
 })
 
 export const UpdateMatchEventBody = zod.object({
-  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'second_yellow_red', 'own_goal', 'penalty_awarded', 'penalty_goal', 'penalty_missed', 'substitution', 'mvp']),
+  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'second_yellow_red', 'own_goal', 'penalty_awarded', 'penalty_goal', 'penalty_missed', 'ten_meter_goal', 'foul', 'substitution', 'mvp']),
   "minute": zod.string(),
   "teamId": zod.number(),
   "playerName": zod.string(),
@@ -1052,7 +1052,7 @@ export const UpdateMatchEventBody = zod.object({
 export const UpdateMatchEventResponse = zod.object({
   "id": zod.number(),
   "matchId": zod.number(),
-  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'second_yellow_red', 'own_goal', 'penalty_awarded', 'penalty_goal', 'penalty_missed', 'substitution', 'mvp']),
+  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'second_yellow_red', 'own_goal', 'penalty_awarded', 'penalty_goal', 'penalty_missed', 'ten_meter_goal', 'foul', 'substitution', 'mvp']),
   "minute": zod.string(),
   "teamId": zod.number(),
   "playerName": zod.string(),

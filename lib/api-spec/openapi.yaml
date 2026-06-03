@@ -1642,7 +1642,7 @@ components:
           type: integer
         type:
           type: string
-          enum: [goal, yellow_card, red_card, second_yellow_red, own_goal, penalty_awarded, penalty_goal, penalty_missed, substitution, mvp]
+          enum: [goal, yellow_card, red_card, second_yellow_red, own_goal, penalty_awarded, penalty_goal, penalty_missed, ten_meter_goal, foul, substitution, mvp]
         minute:
           type: string
         teamId:
@@ -1662,7 +1662,7 @@ components:
       properties:
         type:
           type: string
-          enum: [goal, yellow_card, red_card, second_yellow_red, own_goal, penalty_awarded, penalty_goal, penalty_missed, substitution, mvp]
+          enum: [goal, yellow_card, red_card, second_yellow_red, own_goal, penalty_awarded, penalty_goal, penalty_missed, ten_meter_goal, foul, substitution, mvp]
         minute:
           type: string
         teamId:
