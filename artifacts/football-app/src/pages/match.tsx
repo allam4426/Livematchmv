@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 /* ─── helpers ─── */
 
 function FormDot({ result }: { result: string }) {
-  const colors = { W: "bg-emerald-500", D: "bg-amber-400", L: "bg-red-500" };
+  const colors = { W: "bg-emerald-500", D: "bg-slate-500", L: "bg-red-500" };
   return (
     <span className={cn(
       "w-4 h-4 rounded-full inline-flex items-center justify-center text-[8px] font-black text-white",

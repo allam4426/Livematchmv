@@ -17,7 +17,7 @@ import { useState } from "react";
 
 /* ─── form dot ─── */
 function FormDot({ result }: { result: string }) {
-  const colors: Record<string, string> = { W: "bg-emerald-500", D: "bg-amber-400", L: "bg-red-500" };
+  const colors: Record<string, string> = { W: "bg-emerald-500", D: "bg-slate-500", L: "bg-red-500" };
   return (
     <span className={cn(
       "w-4 h-4 rounded-full inline-flex items-center justify-center text-[8px] font-black text-white shrink-0",
