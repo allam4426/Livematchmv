@@ -1,0 +1,1 @@
+- [API client credentials](api-client-credentials.md) — customFetch needs credentials:"include" or browser drops session cookies silently.

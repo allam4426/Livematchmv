@@ -53,6 +53,7 @@ router.post("/admin/login", async (req, res) => {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
       sameSite: "lax",
+      path: "/",
     });
     res.json({ authenticated: true, role: "staff", email: user.email, name: user.name });
     return;
@@ -69,12 +70,13 @@ router.post("/admin/login", async (req, res) => {
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     sameSite: "lax",
+    path: "/",
   });
   res.json({ authenticated: true, role: "superadmin" });
 });
 
 router.post("/admin/logout", (_req, res) => {
-  res.clearCookie(COOKIE_NAME);
+  res.clearCookie(COOKIE_NAME, { path: "/" });
   res.json({ authenticated: false });
 });
 
