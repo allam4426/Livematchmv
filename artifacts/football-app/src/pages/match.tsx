@@ -336,6 +336,13 @@ function initials(name: string) {
   const parts = name.trim().split(/\s+/);
   return (parts[0]?.[0] ?? "").toUpperCase();
 }
+function isGoalkeeper(player: LineupPlayer) {
+  const pos = (player.position ?? "").toLowerCase().trim();
+  return pos === "goalkeeper" || pos === "goal keeper" || pos === "gk" || pos === "goalie";
+}
+function isCoach(player: LineupPlayer) {
+  return player.role === "coach";
+}
 
 function SquadAvatar({
   player, events, side,
@@ -343,6 +350,8 @@ function SquadAvatar({
   player: LineupPlayer; events: SummaryEvent[]; side: "home" | "away";
 }) {
   const isCaptain = player.role === "captain";
+  const gk = isGoalkeeper(player);
+  const coach = isCoach(player);
   const playerEvents = events.filter(e => e.playerName === player.playerName);
   const hasYellow = playerEvents.some(e => e.type === "yellow_card" || e.type === "second_yellow_red");
   const hasRed    = playerEvents.some(e => e.type === "red_card"    || e.type === "second_yellow_red");
@@ -353,18 +362,24 @@ function SquadAvatar({
     <div className="relative shrink-0">
       <div className={cn(
         "w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-black text-white",
-        avatarColor(player.playerName)
+        coach ? "bg-violet-700" : gk ? "bg-teal-600" : avatarColor(player.playerName)
       )}>
         {initials(player.playerName)}
       </div>
+      {/* Role badges — top-left */}
       {isCaptain && (
         <span className="absolute -top-1 -left-1 w-3.5 h-3.5 rounded-full bg-amber-400 border border-background flex items-center justify-center text-[7px] font-black text-black leading-none">C</span>
       )}
+      {gk && !isCaptain && (
+        <span className="absolute -top-1 -left-1 w-3.5 h-3.5 rounded-full bg-teal-400 border border-background flex items-center justify-center text-[6px] font-black text-black leading-none">GK</span>
+      )}
+      {/* Card badges — top-right */}
       {hasRed ? (
         <span className="absolute -top-0.5 -right-0.5 w-2 h-2.5 rounded-[2px] bg-red-500 border border-background" />
       ) : hasYellow ? (
         <span className="absolute -top-0.5 -right-0.5 w-2 h-2.5 rounded-[2px] bg-yellow-400 border border-background" />
       ) : null}
+      {/* Sub badges — bottom-right */}
       {subbedOn && (
         <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border border-background flex items-center justify-center text-[7px] text-white font-black leading-none">↑</span>
       )}
@@ -375,13 +390,38 @@ function SquadAvatar({
   );
 }
 
+function PlayerSubLabel({ player, align }: { player: LineupPlayer; align: "left" | "right" }) {
+  const gk = isGoalkeeper(player);
+  const coach = isCoach(player);
+  if (coach) {
+    return <p className={cn("text-[10px] font-bold text-violet-400 leading-none", align === "right" && "text-right")}>Head Coach</p>;
+  }
+  if (gk) {
+    const label = player.playerNumber ? `Goal Keeper - #${player.playerNumber}` : "Goal Keeper";
+    return <p className={cn("text-[10px] font-bold text-teal-400 leading-none", align === "right" && "text-right")}>{label}</p>;
+  }
+  if (player.playerNumber) {
+    return <p className={cn("text-[10px] text-muted-foreground font-medium leading-none", align === "right" && "text-right")}>#{player.playerNumber}</p>;
+  }
+  return null;
+}
+
 function SquadPlayerRow({
   home, away, events,
 }: {
   home?: LineupPlayer; away?: LineupPlayer; events: SummaryEvent[];
 }) {
+  const homeGk = home && isGoalkeeper(home);
+  const awayGk = away && isGoalkeeper(away);
+  const homeCoach = home && isCoach(home);
+  const awayCoach = away && isCoach(away);
+  const highlight = homeGk || awayGk || homeCoach || awayCoach;
+
   return (
-    <div className="grid grid-cols-2 border-t border-border/30 first:border-t-0">
+    <div className={cn(
+      "grid grid-cols-2 border-t border-border/30 first:border-t-0",
+      highlight && "bg-white/[0.02]"
+    )}>
       {/* Home player — avatar left, text right */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-r border-border/30">
         {home ? (
@@ -389,9 +429,7 @@ function SquadPlayerRow({
             <SquadAvatar player={home} events={events} side="home" />
             <div className="min-w-0">
               <p className="text-[12px] font-semibold text-foreground leading-tight truncate">{home.playerName}</p>
-              {home.playerNumber && (
-                <p className="text-[10px] text-muted-foreground font-medium">#{home.playerNumber}</p>
-              )}
+              <PlayerSubLabel player={home} align="left" />
             </div>
           </>
         ) : null}
@@ -402,9 +440,7 @@ function SquadPlayerRow({
           <>
             <div className="min-w-0 text-right">
               <p className="text-[12px] font-semibold text-foreground leading-tight truncate">{away.playerName}</p>
-              {away.playerNumber && (
-                <p className="text-[10px] text-muted-foreground font-medium">#{away.playerNumber}</p>
-              )}
+              <PlayerSubLabel player={away} align="right" />
             </div>
             <SquadAvatar player={away} events={events} side="away" />
           </>
@@ -451,10 +487,15 @@ function SquadTab({ matchId, match }: { matchId: number; match: MatchDetail }) {
 
   const homePlayers = (lineup.home ?? []) as LineupPlayer[];
   const awayPlayers = (lineup.away ?? []) as LineupPlayer[];
-  const homeStarters = homePlayers.filter(p => p.isStarting !== false).sort((a, b) => a.playerName.localeCompare(b.playerName));
-  const awayStarters = awayPlayers.filter(p => p.isStarting !== false).sort((a, b) => a.playerName.localeCompare(b.playerName));
-  const homeSubs = homePlayers.filter(p => p.isStarting === false).sort((a, b) => a.playerName.localeCompare(b.playerName));
-  const awaySubs = awayPlayers.filter(p => p.isStarting === false).sort((a, b) => a.playerName.localeCompare(b.playerName));
+
+  const sort = (arr: LineupPlayer[]) => [...arr].sort((a, b) => a.playerName.localeCompare(b.playerName));
+
+  const homeCoaches  = sort(homePlayers.filter(p => isCoach(p)));
+  const awayCoaches  = sort(awayPlayers.filter(p => isCoach(p)));
+  const homeStarters = sort(homePlayers.filter(p => !isCoach(p) && p.isStarting !== false));
+  const awayStarters = sort(awayPlayers.filter(p => !isCoach(p) && p.isStarting !== false));
+  const homeSubs     = sort(homePlayers.filter(p => !isCoach(p) && p.isStarting === false));
+  const awaySubs     = sort(awayPlayers.filter(p => !isCoach(p) && p.isStarting === false));
 
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
@@ -475,6 +516,9 @@ function SquadTab({ matchId, match }: { matchId: number; match: MatchDetail }) {
 
       {/* Substitutes */}
       <SquadSection label="Substitutes" home={homeSubs} away={awaySubs} events={events} />
+
+      {/* Coaching staff — always at the bottom */}
+      <SquadSection label="Coaching Staff" home={homeCoaches} away={awayCoaches} events={events} />
     </div>
   );
 }
