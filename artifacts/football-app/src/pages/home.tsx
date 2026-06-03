@@ -1,10 +1,10 @@
-import { useListLiveMatches, useListMatches, useListCompetitions, useListActiveTournaments } from "@workspace/api-client-react";
+import { useListLiveMatches, useListMatches, useListCompetitions, useListActiveTournaments, type Match } from "@workspace/api-client-react";
 import { MatchCard } from "@/components/match-card";
 import { MatchRow } from "@/components/match-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BannerSlot } from "@/components/banner-slot";
 import { SpotlightCard } from "@/components/spotlight-card";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   addDays, format, isToday, isSameDay,
   startOfMonth, endOfMonth, eachDayOfInterval, getDay,
@@ -17,6 +17,57 @@ import { Link } from "wouter";
 const SPORTS = ["All", "Football", "Futsal"];
 const STRIP_BEFORE = 3;
 const STRIP_AFTER = 10;
+
+/* ─── Spotlight Carousel ─── */
+function SpotlightCarousel({ matches }: { matches: Match[] }) {
+  const [idx, setIdx] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const next = useCallback(() => setIdx(i => (i + 1) % matches.length), [matches.length]);
+  const go = (i: number) => { setIdx(i); resetTimer(); };
+
+  const resetTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (matches.length > 1) {
+      timerRef.current = setInterval(next, 5000);
+    }
+  }, [matches.length, next]);
+
+  useEffect(() => {
+    resetTimer();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [resetTimer]);
+
+  // Reset index when match list changes
+  useEffect(() => { setIdx(0); }, [matches.length]);
+
+  const current = matches[idx] ?? matches[0];
+  if (!current) return null;
+
+  return (
+    <div className="relative">
+      <SpotlightCard key={current.id} match={current} />
+
+      {/* Dot indicators — only shown when multiple spotlights */}
+      {matches.length > 1 && (
+        <div className="flex items-center justify-center gap-1.5 mt-2.5">
+          {matches.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => go(i)}
+              className={cn(
+                "rounded-full transition-all duration-300",
+                i === idx
+                  ? "w-5 h-1.5 bg-primary"
+                  : "w-1.5 h-1.5 bg-white/20 hover:bg-white/40"
+              )}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const TOURNAMENT_STATUS: Record<string, { label: string; className: string; dot?: boolean }> = {
   live:     { label: "Live",     className: "bg-red-500/15 text-red-400 border-red-500/30", dot: true },
@@ -123,13 +174,21 @@ export default function Home() {
     addDays(selectedDate, i - STRIP_BEFORE)
   );
 
-  // Spotlight: any featured match (live, scheduled, or finished)
-  const spotlightMatch = allMatches?.find(m => m.featured)
-    ?? liveMatches?.find(m => m.featured)
-    ?? null;
+  // All spotlight matches (featured), sorted: live first then scheduled
+  const spotlightMatches = [
+    ...(allMatches?.filter(m => m.featured) ?? []),
+    ...(liveMatches?.filter(m => m.featured && !allMatches?.find(x => x.id === m.id)) ?? []),
+  ].sort((a, b) => {
+    const order: Record<string, number> = { live: 0, scheduled: 1, finished: 2, postponed: 3 };
+    return (order[a.status] ?? 9) - (order[b.status] ?? 9);
+  });
+
+  // Deduplicate
+  const seen = new Set<number>();
+  const spotlights = spotlightMatches.filter(m => { if (seen.has(m.id)) return false; seen.add(m.id); return true; });
 
   // Fallback hero: first live match (if no spotlight set)
-  const featuredLive = spotlightMatch ? null : (liveMatches?.[0] ?? null);
+  const featuredLive = spotlights.length === 0 ? (liveMatches?.[0] ?? null) : null;
 
   const filteredMatches = allMatches?.filter(m => {
     const dateMatch = isSameDay(new Date(m.kickoffAt), selectedDate);
@@ -162,8 +221,8 @@ export default function Home() {
       <div className="pt-4 pb-4">
         {(liveLoading || matchesLoading) ? (
           <div className="px-4"><Skeleton className="h-56 w-full rounded-2xl" /></div>
-        ) : spotlightMatch ? (
-          <SpotlightCard match={spotlightMatch} />
+        ) : spotlights.length > 0 ? (
+          <SpotlightCarousel matches={spotlights} />
         ) : featuredLive ? (
           <div className="px-4"><MatchCard match={featuredLive} /></div>
         ) : (

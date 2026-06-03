@@ -143,7 +143,7 @@ export function SpotlightsTab() {
     { query: { queryKey: [...getListMatchesQueryKey(), sport] } }
   );
 
-  const currentSpotlight = matches?.find(m => m.featured);
+  const activeSpotlights = matches?.filter(m => m.featured) ?? [];
   const [pendingId, setPendingId] = useState<number | null>(null);
 
   const invalidate = () => {
@@ -153,23 +153,10 @@ export function SpotlightsTab() {
 
   const handleSet = (match: Match) => {
     setPendingId(match.id);
-    const tasks: Promise<unknown>[] = [];
-    if (currentSpotlight && currentSpotlight.id !== match.id) {
-      tasks.push(
-        new Promise(res =>
-          updateMatch.mutate(
-            { id: currentSpotlight.id, data: { featured: false } },
-            { onSuccess: res, onError: res }
-          )
-        )
-      );
-    }
-    Promise.all(tasks).then(() => {
-      updateMatch.mutate(
-        { id: match.id, data: { featured: true } },
-        { onSuccess: invalidate, onError: () => setPendingId(null) }
-      );
-    });
+    updateMatch.mutate(
+      { id: match.id, data: { featured: true } },
+      { onSuccess: invalidate, onError: () => setPendingId(null) }
+    );
   };
 
   const handleUnset = (match: Match) => {
@@ -193,18 +180,25 @@ export function SpotlightsTab() {
         </div>
         <div>
           <p className="text-sm font-black text-foreground">Spotlights</p>
-          <p className="text-[10px] text-muted-foreground">Choose which match appears as the featured spotlight on the home page</p>
+          <p className="text-[10px] text-muted-foreground">Add multiple — they auto-scroll every 5 seconds on the home page</p>
         </div>
       </div>
 
-      {/* Current spotlight preview */}
-      {currentSpotlight && <CurrentSpotlight match={currentSpotlight} />}
+      {/* Active spotlights preview */}
+      {activeSpotlights.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">
+            Active Spotlights ({activeSpotlights.length}) — auto-scrolls every 5s
+          </p>
+          {activeSpotlights.map(m => <CurrentSpotlight key={m.id} match={m} />)}
+        </div>
+      )}
 
-      {!currentSpotlight && !isLoading && (
+      {activeSpotlights.length === 0 && !isLoading && (
         <div className="rounded-2xl border border-dashed border-border bg-muted/20 py-8 text-center">
           <Star className="w-7 h-7 text-muted-foreground/30 mx-auto mb-2" />
-          <p className="text-sm font-bold text-muted-foreground">No spotlight set</p>
-          <p className="text-[11px] text-muted-foreground/60 mt-1">Pick a match below to feature it on the home page</p>
+          <p className="text-sm font-bold text-muted-foreground">No spotlights set</p>
+          <p className="text-[11px] text-muted-foreground/60 mt-1">Pick matches below — they'll carousel on the home page</p>
         </div>
       )}
 
