@@ -207,13 +207,27 @@ router.get("/tournaments/:id/standings", async (req, res) => {
 
   const format = tournament.format ?? "league";
 
+  // Knockout round names — matches with these groups don't count toward standings
+  const KNOCKOUT_ROUNDS = new Set([
+    "round of 128","round of 64","round of 32","round of 16","round of 8",
+    "quarter-final","quarter-finals","quarterfinal","quarterfinals","qf",
+    "semi-final","semi-finals","semifinal","semifinals","sf",
+    "third place","third-place","third place playoff",
+    "playoff","play-off","final","grand final","championship",
+  ]);
+  const isKnockoutRound = (g: string | null) =>
+    !!g && KNOCKOUT_ROUNDS.has(g.toLowerCase().replace(/[-_\s]+/g, " ").trim());
+
+  // Filter out knockout-round matches so only group stage matches go into standings
+  const standingsMatches = allMatches.filter(m => !isKnockoutRound(m.match.matchGroup));
+
   // Check if any match has a group assigned
-  const hasGroups = allMatches.some(m => m.match.matchGroup);
+  const hasGroups = standingsMatches.some(m => m.match.matchGroup);
 
   if (format === "group_stage" || hasGroups) {
     // Group by matchGroup
-    const grouped = new Map<string, typeof allMatches>();
-    for (const m of allMatches) {
+    const grouped = new Map<string, typeof standingsMatches>();
+    for (const m of standingsMatches) {
       const grp = m.match.matchGroup ?? "Ungrouped";
       if (!grouped.has(grp)) grouped.set(grp, []);
       grouped.get(grp)!.push(m);
