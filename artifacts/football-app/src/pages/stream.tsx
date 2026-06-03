@@ -30,12 +30,14 @@ function toEmbedUrl(raw: string): string {
   const dm = raw.match(/dailymotion\.com\/video\/([A-Za-z0-9]+)/);
   if (dm) return `https://www.dailymotion.com/embed/video/${dm[1]}?autoplay=1`;
 
-  // Facebook Live / Facebook Video
-  if (/facebook\.com|fb\.watch/.test(raw)) {
-    return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(raw)}&width=1280&show_text=false&autoplay=true&allowfullscreen=true`;
-  }
+  // Facebook: do NOT embed — Facebook blocks iframes on non-whitelisted domains.
+  // Handled separately by isFacebook() check below.
 
   return raw;
+}
+
+function isFacebook(url: string) {
+  return /facebook\.com|fb\.watch/.test(url);
 }
 
 function isVideoFile(url: string) {
@@ -44,6 +46,55 @@ function isVideoFile(url: string) {
 
 function isHls(url: string) {
   return /\.m3u8(\?.*)?$/i.test(url);
+}
+
+// ── Facebook Live Card ───────────────────────────────────────────────────────
+
+function FacebookLiveCard({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = () => {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0a0f1e] gap-5 px-6 text-center">
+      {/* Facebook logo */}
+      <div className="w-16 h-16 rounded-2xl bg-[#1877F2] flex items-center justify-center shadow-lg shadow-blue-900/40">
+        <svg viewBox="0 0 24 24" fill="white" className="w-9 h-9">
+          <path d="M24 12.073C24 5.406 18.627 0 12 0S0 5.406 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.874v2.277h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+        </svg>
+      </div>
+
+      <div className="space-y-1">
+        <p className="text-base font-black text-white">Facebook Live</p>
+        <p className="text-xs text-white/50 max-w-xs leading-relaxed">
+          Facebook restricts embedded playback to approved domains. Watch the stream directly on Facebook.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2 w-full max-w-xs">
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-sm rounded-xl px-5 py-3 transition-colors shadow-lg shadow-blue-900/30"
+        >
+          <ExternalLink className="w-4 h-4" />
+          Watch on Facebook
+        </a>
+        <button
+          onClick={copy}
+          className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white/80 font-semibold text-xs rounded-xl px-5 py-2.5 transition-colors border border-white/10"
+        >
+          {copied ? "✓ Link copied!" : "Copy stream link"}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // ── HLS Player ──────────────────────────────────────────────────────────────
@@ -180,6 +231,10 @@ function StreamPlayer({
 }) {
   if (stream.embedCode?.trim()) {
     return <EmbedCodePlayer code={stream.embedCode} />;
+  }
+
+  if (isFacebook(stream.url)) {
+    return <FacebookLiveCard url={stream.url} />;
   }
 
   if (isVideoFile(stream.url)) {
