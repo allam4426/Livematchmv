@@ -1,12 +1,14 @@
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
-import { Home as HomeIcon, Gamepad2, Play, LayoutGrid } from "lucide-react";
+import { Home as HomeIcon, Gamepad2, Play, LayoutGrid, Sun, Moon } from "lucide-react";
 import { useAdminMe } from "@workspace/api-client-react";
+import { useTheme } from "@/hooks/use-theme";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { data: auth } = useAdminMe();
   const isAdmin = auth?.authenticated === true;
+  const { theme, toggle } = useTheme();
 
   const topNav = [
     { href: "/", label: "Home" },
@@ -34,18 +36,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </span>
             </span>
           </Link>
-          <nav className="hidden md:flex items-center gap-6">
-            {topNav.map((item) => (
-              <Link key={item.href} href={item.href}>
-                <span className={cn(
-                  "text-sm font-medium transition-colors hover:text-primary cursor-pointer",
-                  location === item.href ? "text-primary" : "text-muted-foreground"
-                )}>
-                  {item.label}
-                </span>
-              </Link>
-            ))}
-          </nav>
+          <div className="flex items-center gap-4">
+            <nav className="hidden md:flex items-center gap-6">
+              {topNav.map((item) => (
+                <Link key={item.href} href={item.href}>
+                  <span className={cn(
+                    "text-sm font-medium transition-colors hover:text-primary cursor-pointer",
+                    location === item.href ? "text-primary" : "text-muted-foreground"
+                  )}>
+                    {item.label}
+                  </span>
+                </Link>
+              ))}
+            </nav>
+            <button
+              onClick={toggle}
+              title={theme === "dark" ? "Switch to Day mode" : "Switch to Night mode"}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
       </header>
 

@@ -955,7 +955,7 @@ export function EventsTab() {
           modal={modal}
           match={match}
           lineup={lineup as any}
-          defaultMinute={minuteStr}
+          defaultMinute={isPSO ? "PSO" : minuteStr}
           onClose={() => setModal(null)}
           onSubmit={handleLogEvent}
           isPending={createEvent.isPending}

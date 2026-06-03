@@ -14,6 +14,65 @@ import { cn } from "@/lib/utils";
 type Sport = "football" | "futsal";
 type Status = "scheduled" | "live" | "finished" | "postponed";
 
+/* ─── Match Group / Round picker ─── */
+const GROUP_PRESETS = [
+  { label: "Grp A", value: "Group A" },
+  { label: "Grp B", value: "Group B" },
+  { label: "Grp C", value: "Group C" },
+  { label: "Grp D", value: "Group D" },
+  { label: "Grp E", value: "Group E" },
+  { label: "Grp F", value: "Group F" },
+  { label: "Grp G", value: "Group G" },
+  { label: "Grp H", value: "Group H" },
+];
+const KNOCKOUT_PRESETS = [
+  { label: "R32",       value: "Round of 32" },
+  { label: "R16",       value: "Round of 16" },
+  { label: "QF",        value: "Quarter-Final" },
+  { label: "SF",        value: "Semi-Final" },
+  { label: "3rd Place", value: "Third Place" },
+  { label: "Final",     value: "Final" },
+];
+
+function MatchGroupPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1">
+        {GROUP_PRESETS.map(p => (
+          <button key={p.value} type="button"
+            onClick={() => onChange(value === p.value ? "" : p.value)}
+            className={cn(
+              "rounded-full px-2.5 py-1 text-[10px] font-bold border transition-all",
+              value === p.value
+                ? "bg-blue-600 text-white border-blue-600"
+                : "bg-card text-muted-foreground border-border hover:border-blue-500/50"
+            )}>{p.label}</button>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {KNOCKOUT_PRESETS.map(p => (
+          <button key={p.value} type="button"
+            onClick={() => onChange(value === p.value ? "" : p.value)}
+            className={cn(
+              "rounded-full px-2.5 py-1 text-[10px] font-bold border transition-all",
+              value === p.value
+                ? (p.value === "Final" ? "bg-amber-500 text-white border-amber-500"
+                  : p.value.startsWith("Semi") ? "bg-orange-600 text-white border-orange-600"
+                  : "bg-primary text-white border-primary")
+                : "bg-card text-muted-foreground border-border hover:border-primary/50"
+            )}>{p.label}</button>
+        ))}
+      </div>
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder="Custom (or click above)"
+        className="admin-input"
+      />
+    </div>
+  );
+}
+
 const STATUSES: Status[] = ["scheduled", "live", "finished", "postponed"];
 const STATUS_COLORS: Record<Status, string> = {
   live: "text-red-400 bg-red-500/10 border-red-500/25",
@@ -207,10 +266,9 @@ export function MatchesTab() {
               <input value={form.venue} onChange={e => setForm(f => ({ ...f, venue: e.target.value }))}
                 placeholder="Wembley Stadium" className="admin-input" />
             </div>
-            <div>
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Match Group / Round</label>
-              <input value={form.matchGroup} onChange={e => setForm(f => ({ ...f, matchGroup: e.target.value }))}
-                placeholder="Group A / Semi-Final" className="admin-input" />
+            <div className="col-span-2">
+              <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1.5">Match Group / Round</label>
+              <MatchGroupPicker value={form.matchGroup} onChange={v => setForm(f => ({ ...f, matchGroup: v }))} />
             </div>
             <div className="flex items-center gap-2 mt-4">
               <input type="checkbox" id="featured" checked={form.featured}
@@ -346,11 +404,9 @@ export function MatchesTab() {
                         className="admin-input" placeholder="Wembley" />
                     </div>
                     {/* Match Group */}
-                    <div>
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Group / Round</label>
-                      <input value={editForm.matchGroup}
-                        onChange={e => setEditForm(f => ({ ...f, matchGroup: e.target.value }))}
-                        className="admin-input" placeholder="Group A / Semi-Final" />
+                    <div className="col-span-2">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1.5">Group / Round</label>
+                      <MatchGroupPicker value={editForm.matchGroup} onChange={v => setEditForm(f => ({ ...f, matchGroup: v }))} />
                     </div>
                     {/* Status */}
                     <div>

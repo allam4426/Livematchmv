@@ -13,17 +13,6 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 /* ─── helpers ─── */
-const EVENT_META: Record<string, { icon: string; label: string; color: string }> = {
-  goal:            { icon: "⚽", label: "Goal",         color: "bg-emerald-600" },
-  yellow_card:     { icon: "🟨", label: "Yellow Card",   color: "bg-amber-500" },
-  red_card:        { icon: "🟥", label: "Red Card",      color: "bg-red-600" },
-  own_goal:        { icon: "↩⚽", label: "Own Goal",     color: "bg-orange-500" },
-  penalty_awarded: { icon: "P!", label: "Penalty",       color: "bg-blue-500" },
-  penalty_goal:    { icon: "P⚽", label: "Penalty Goal", color: "bg-emerald-600" },
-  penalty_missed:  { icon: "P✗", label: "Pen. Miss",    color: "bg-red-600" },
-  substitution:    { icon: "↕",  label: "Substitution", color: "bg-blue-600" },
-  mvp:             { icon: "⭐", label: "MVP",           color: "bg-amber-500" },
-};
 
 function FormDot({ result }: { result: string }) {
   const colors = { W: "bg-emerald-500", D: "bg-amber-400", L: "bg-red-500" };
@@ -58,33 +47,120 @@ function TeamFormDots({ teamId }: { teamId: number }) {
 type Tab = "Summary" | "Squad" | "Standings";
 
 /* ─── Summary ─── */
-const EVENT_ICON: Record<string, string> = {
-  goal:            "⚽",
-  yellow_card:     "🟨",
-  red_card:        "🟥",
-  own_goal:        "⚽",
-  penalty_awarded: "🎯",
-  penalty_goal:    "⚽",
-  penalty_missed:  "❌",
-  substitution:    "🔄",
-  mvp:             "⭐",
-};
 
-const EVENT_LABEL: Record<string, string> = {
-  goal:            "Goal",
-  yellow_card:     "Yellow",
-  red_card:        "Red Card",
-  own_goal:        "Own Goal",
-  penalty_awarded: "Penalty",
-  penalty_goal:    "Pen. Goal",
-  penalty_missed:  "Pen. Miss",
-  substitution:    "Sub",
-  mvp:             "MVP",
-};
+type EventPhase = "pso" | "et" | "h2" | "h1";
+
+function getEventPhase(minute: string): EventPhase {
+  if (!minute || minute === "PSO") return "pso";
+  const base = parseInt(minute.split("+")[0], 10);
+  if (isNaN(base)) return "pso";
+  if (base > 90) return "et";
+  if (base > 45) return "h2";
+  return "h1";
+}
+
+function PhaseSeparator({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3 py-3">
+      <div className="flex-1 h-px bg-border" />
+      <span className="text-[10px] font-black text-muted-foreground/80 uppercase tracking-widest shrink-0 whitespace-nowrap">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-border" />
+    </div>
+  );
+}
+
+function EventDot({ type }: { type: string }) {
+  const styles: Record<string, string> = {
+    goal:            "bg-emerald-500 text-white",
+    penalty_goal:    "bg-emerald-500 text-white",
+    own_goal:        "bg-orange-500 text-white",
+    yellow_card:     "bg-amber-400 text-white",
+    red_card:        "bg-red-500 text-white",
+    penalty_missed:  "bg-red-500 text-white",
+    substitution:    "bg-blue-500 text-white",
+    penalty_awarded: "bg-blue-400 text-white",
+    mvp:             "bg-amber-400 text-white",
+  };
+  const icons: Record<string, string> = {
+    goal:            "⚽", penalty_goal: "⚽", own_goal: "⚽",
+    yellow_card:     "■",  red_card:     "■",
+    penalty_missed:  "✕",  substitution: "↕",
+    penalty_awarded: "P",  mvp:          "★",
+  };
+  return (
+    <div className={cn(
+      "w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-black shrink-0",
+      styles[type] ?? "bg-muted-foreground/30 text-white"
+    )}>
+      {icons[type] ?? "•"}
+    </div>
+  );
+}
+
+interface SummaryEvent {
+  id: number;
+  type: string;
+  minute: string;
+  teamId: number;
+  playerName?: string | null;
+  playerNumber?: string | null;
+  assistPlayerName?: string | null;
+  description?: string | null;
+}
+
+function EventRow({ event, homeTeamId, isPSO }: { event: SummaryEvent; homeTeamId: number; isPSO?: boolean }) {
+  const isHome = event.teamId === homeTeamId;
+  const minuteLabel = isPSO ? "PEN" : event.minute.includes("+") ? `${event.minute}'` : `${event.minute}'`;
+  const subOut = event.type === "substitution" && event.description
+    ? event.description.replace(/^Out:\s*/i, "").split(" · ")[0]
+    : null;
+
+  const minutePill = (
+    <div className="px-2.5 py-1 rounded-lg bg-foreground/[0.07] min-w-[38px] text-center shrink-0">
+      <span className="text-[11px] font-bold text-foreground/60 tabular-nums">{minuteLabel}</span>
+    </div>
+  );
+  const dot = <EventDot type={event.type} />;
+
+  const playerBlock = (
+    <div className={cn("flex flex-col gap-0.5 min-w-0 max-w-[120px]", isHome ? "items-end text-right" : "items-start text-left")}>
+      {event.playerName && (
+        <span className="text-[13px] font-bold text-foreground leading-tight truncate w-full">{event.playerName}</span>
+      )}
+      {event.assistPlayerName && (
+        <span className="text-[11px] text-muted-foreground leading-none truncate w-full">{event.assistPlayerName}</span>
+      )}
+      {subOut && !event.assistPlayerName && (
+        <span className="text-[11px] text-muted-foreground leading-none truncate w-full">{subOut}</span>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="flex items-center py-2">
+      {isHome ? (
+        <>
+          <div className="flex-1 flex justify-end pr-2">{playerBlock}</div>
+          <div className="flex items-center gap-1.5 shrink-0">{dot}{minutePill}</div>
+          <div className="flex-1" />
+        </>
+      ) : (
+        <>
+          <div className="flex-1" />
+          <div className="flex items-center gap-1.5 shrink-0">{minutePill}{dot}</div>
+          <div className="flex-1 flex justify-start pl-2">{playerBlock}</div>
+        </>
+      )}
+    </div>
+  );
+}
 
 function SummaryTab({ match }: { match: MatchDetail }) {
-  const events = match.events ?? [];
-  if (events.length === 0) {
+  const rawEvents = (match.events ?? []) as SummaryEvent[];
+
+  if (rawEvents.length === 0) {
     return (
       <div className="py-10 text-center text-muted-foreground text-sm">
         No events recorded yet.
@@ -92,65 +168,94 @@ function SummaryTab({ match }: { match: MatchDetail }) {
     );
   }
 
+  const mvpEvents    = rawEvents.filter(e => e.type === "mvp");
+  const lineEvents   = rawEvents.filter(e => e.type !== "mvp");
+  const psoEvents    = lineEvents.filter(e => getEventPhase(e.minute) === "pso");
+  const etEvents     = [...lineEvents.filter(e => getEventPhase(e.minute) === "et")].reverse();
+  const h2Events     = [...lineEvents.filter(e => getEventPhase(e.minute) === "h2")].reverse();
+  const h1Events     = [...lineEvents.filter(e => getEventPhase(e.minute) === "h1")].reverse();
+
+  // HT score from H1 goal events
+  const goalTypes = ["goal", "penalty_goal"];
+  const htHome = h1Events.filter(e => goalTypes.includes(e.type) && e.teamId === match.homeTeam.id).length
+               + h1Events.filter(e => e.type === "own_goal" && e.teamId === match.awayTeam.id).length;
+  const htAway = h1Events.filter(e => goalTypes.includes(e.type) && e.teamId === match.awayTeam.id).length
+               + h1Events.filter(e => e.type === "own_goal" && e.teamId === match.homeTeam.id).length;
+
+  const finalHome = match.homeScore ?? 0;
+  const finalAway = match.awayScore ?? 0;
+  const psoHome = psoEvents.filter(e => e.type === "penalty_goal" && e.teamId === match.homeTeam.id).length;
+  const psoAway = psoEvents.filter(e => e.type === "penalty_goal" && e.teamId === match.awayTeam.id).length;
+  const ftHome = finalHome - psoHome;
+  const ftAway = finalAway - psoAway;
+
+  let kickoffStr = "";
+  try { kickoffStr = format(new Date(match.kickoffAt), "HH:mm"); } catch {}
+
+  const hasET = etEvents.length > 0;
+  const hasPSO = psoEvents.length > 0;
+  const isFinished = match.status === "finished";
+
   return (
-    <div className="relative py-2">
-      {/* vertical centre line */}
-      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/60 -translate-x-1/2" />
+    <div className="px-4 py-2">
+      {/* Centre line */}
+      <div className="relative">
+        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/40 -translate-x-1/2 pointer-events-none" />
 
-      <div className="flex flex-col gap-0">
-        {events.map(event => {
-          const isHome = event.teamId === match.homeTeam.id;
-          const isMvp  = event.type === "mvp";
-          const icon   = EVENT_ICON[event.type]  ?? "•";
-          const label  = EVENT_LABEL[event.type] ?? event.type;
-          const minute = isMvp ? "MVP" : `${event.minute}'`;
+        {/* ── PSO section ── */}
+        {hasPSO && (
+          <>
+            {psoEvents.map(e => (
+              <EventRow key={e.id} event={e} homeTeamId={match.homeTeam.id} isPSO />
+            ))}
+            {hasET && <PhaseSeparator label={`Extra Time (${ftHome}-${ftAway})`} />}
+          </>
+        )}
 
-          const textBlock = (
-            <div className={cn("flex-1 min-w-0 flex flex-col gap-0.5", isHome ? "items-end pr-3 text-right" : "items-start pl-3 text-left")}>
-              <span className="text-[11px] text-muted-foreground/70 tabular-nums leading-none">{minute}</span>
-              <span className="text-[15px] font-bold text-foreground leading-tight">{label}</span>
-              {(event.playerNumber || event.playerName) && (
-                <span className="text-[11px] text-muted-foreground leading-none">
-                  {event.playerNumber ? `#${event.playerNumber} ` : ""}{event.playerName}
-                </span>
-              )}
-              {event.assistPlayerName && (
-                <span className="text-[10px] text-muted-foreground/60 leading-none">▷ {event.assistPlayerName}</span>
-              )}
-            </div>
-          );
+        {/* ── ET events ── */}
+        {hasET && (
+          <>
+            {etEvents.map(e => (
+              <EventRow key={e.id} event={e} homeTeamId={match.homeTeam.id} />
+            ))}
+            <PhaseSeparator label={`FT (${ftHome}-${ftAway})`} />
+          </>
+        )}
 
-          const iconBox = (
-            <div className="relative z-10 flex flex-col items-center shrink-0">
-              <div className="w-11 h-11 rounded-xl border border-border bg-card flex items-center justify-center text-xl shadow-sm">
-                {icon}
-              </div>
-            </div>
-          );
+        {/* FT divider when no ET/PSO */}
+        {!hasET && !hasPSO && isFinished && (
+          <PhaseSeparator label={`FT (${finalHome}-${finalAway})`} />
+        )}
 
-          return (
-            <div key={event.id} className="flex items-center py-3">
-              {isHome ? (
-                <>
-                  {/* home: text right of nothing, fills left half */}
-                  {textBlock}
-                  {iconBox}
-                  {/* spacer for right half */}
-                  <div className="flex-1" />
-                </>
-              ) : (
-                <>
-                  {/* spacer for left half */}
-                  <div className="flex-1" />
-                  {iconBox}
-                  {/* away: text fills right half */}
-                  {textBlock}
-                </>
-              )}
-            </div>
-          );
-        })}
+        {/* ── H2 events ── */}
+        {h2Events.map(e => (
+          <EventRow key={e.id} event={e} homeTeamId={match.homeTeam.id} />
+        ))}
+
+        {/* HT divider */}
+        {(h1Events.length > 0 || h2Events.length > 0) && (
+          <PhaseSeparator label={`HT (${htHome}-${htAway})`} />
+        )}
+
+        {/* ── H1 events ── */}
+        {h1Events.map(e => (
+          <EventRow key={e.id} event={e} homeTeamId={match.homeTeam.id} />
+        ))}
+
+        {/* KO */}
+        {kickoffStr && <PhaseSeparator label={`KO - ${kickoffStr}`} />}
       </div>
+
+      {/* MVP */}
+      {mvpEvents.map(e => (
+        <div key={e.id} className="flex items-center justify-center gap-2 pt-3 mt-2 border-t border-border/40">
+          <span className="text-amber-400 text-lg">⭐</span>
+          <div className="text-center">
+            <p className="text-sm font-black text-foreground">{e.playerName}</p>
+            <p className="text-[10px] text-amber-400 font-semibold uppercase tracking-wide">Man of the Match</p>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

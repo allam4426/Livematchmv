@@ -84,6 +84,33 @@
 html {
   color-scheme: dark;
 }
+html.light {
+  color-scheme: light;
+}
+
+.light {
+  --background: 210 25% 96%;
+  --foreground: 213 55% 10%;
+  --border: 214 20% 82%;
+  --input: 214 20% 82%;
+  --ring: 25 100% 50%;
+  --card: 0 0% 100%;
+  --card-foreground: 213 55% 10%;
+  --card-border: 214 20% 84%;
+  --popover: 0 0% 98%;
+  --popover-foreground: 213 55% 10%;
+  --popover-border: 214 20% 82%;
+  --primary: 0 80% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 20% 90%;
+  --secondary-foreground: 213 55% 15%;
+  --muted: 210 20% 91%;
+  --muted-foreground: 213 18% 42%;
+  --accent: 210 20% 90%;
+  --accent-foreground: 213 55% 10%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+}
 
 @layer base {
   * {
@@ -139,5 +166,8 @@ html {
   /* Subtle row hover */
   .match-row:hover {
     background-color: hsl(213 42% 14%);
+  }
+  .light .match-row:hover {
+    background-color: hsl(213 20% 93%);
   }
 }
