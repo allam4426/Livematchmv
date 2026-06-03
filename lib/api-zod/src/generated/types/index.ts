@@ -22,6 +22,7 @@ export * from './highlight';
 export * from './highlightInput';
 export * from './lineupPlayer';
 export * from './lineupPlayerInput';
+export * from './lineupPlayerPatch';
 export * from './listActiveTournamentsParams';
 export * from './listBannersParams';
 export * from './listBannersPosition';

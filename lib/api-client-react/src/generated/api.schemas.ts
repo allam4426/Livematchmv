@@ -577,6 +577,11 @@ export interface LineupPlayer {
   isStarting: boolean;
 }
 
+export interface LineupPlayerPatch {
+  role?: string;
+  isStarting?: boolean;
+}
+
 export interface LineupPlayerInput {
   teamId: number;
   playerNumber: string;

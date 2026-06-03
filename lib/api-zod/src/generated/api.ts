@@ -1121,6 +1121,31 @@ export const AddLineupPlayerBody = zod.object({
 
 
 /**
+ * @summary Update a lineup player's role or isStarting
+ */
+export const UpdateLineupPlayerParams = zod.object({
+  "id": zod.coerce.number(),
+  "playerId": zod.coerce.number()
+})
+
+export const UpdateLineupPlayerBody = zod.object({
+  "role": zod.string().optional(),
+  "isStarting": zod.boolean().optional()
+})
+
+export const UpdateLineupPlayerResponse = zod.object({
+  "id": zod.number(),
+  "matchId": zod.number(),
+  "teamId": zod.number(),
+  "playerNumber": zod.string(),
+  "playerName": zod.string(),
+  "position": zod.string().nullish(),
+  "role": zod.string(),
+  "isStarting": zod.boolean()
+})
+
+
+/**
  * @summary Remove a player from lineup
  */
 export const RemoveLineupPlayerParams = zod.object({

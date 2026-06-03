@@ -83,6 +83,20 @@ router.post("/matches/:id/lineup", async (req, res) => {
   res.status(201).json(player);
 });
 
+router.patch("/matches/:id/lineup/:playerId", async (req, res) => {
+  const matchId = Number(req.params.id);
+  const playerId = Number(req.params.playerId);
+  const { role, isStarting } = req.body as { role?: string; isStarting?: boolean };
+  const updates: Record<string, unknown> = {};
+  if (role !== undefined) updates.role = role;
+  if (isStarting !== undefined) updates.isStarting = isStarting;
+  if (Object.keys(updates).length === 0) { res.status(400).json({ error: "Nothing to update" }); return; }
+  const [updated] = await db.update(lineupsTable).set(updates).where(
+    and(eq(lineupsTable.id, playerId), eq(lineupsTable.matchId, matchId))
+  ).returning();
+  res.json(updated);
+});
+
 router.delete("/matches/:id/lineup/:playerId", async (req, res) => {
   const matchId = Number(req.params.id);
   const playerId = Number(req.params.playerId);

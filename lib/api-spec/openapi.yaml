@@ -1023,6 +1023,34 @@ paths:
                 $ref: "#/components/schemas/LineupPlayer"
 
   /matches/{id}/lineup/{playerId}:
+    patch:
+      operationId: updateLineupPlayer
+      tags: [lineup]
+      summary: Update a lineup player's role or isStarting
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LineupPlayerPatch"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LineupPlayer"
     delete:
       operationId: removeLineupPlayer
       tags: [lineup]
@@ -1743,6 +1771,14 @@ components:
           type: string
         position:
           type: ["string", "null"]
+        role:
+          type: string
+        isStarting:
+          type: boolean
+
+    LineupPlayerPatch:
+      type: object
+      properties:
         role:
           type: string
         isStarting:

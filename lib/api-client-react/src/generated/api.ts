@@ -33,6 +33,7 @@ import type {
   HighlightInput,
   LineupPlayer,
   LineupPlayerInput,
+  LineupPlayerPatch,
   ListActiveTournamentsParams,
   ListBannersParams,
   ListHighlightsParams,
@@ -3825,6 +3826,80 @@ export const useAddLineupPlayer = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAddLineupPlayerMutationOptions(options));
+    }
+
+export const getUpdateLineupPlayerUrl = (id: number,
+    playerId: number,) => {
+
+
+
+
+  return `/api/matches/${id}/lineup/${playerId}`
+}
+
+/**
+ * @summary Update a lineup player's role or isStarting
+ */
+export const updateLineupPlayer = async (id: number,
+    playerId: number,
+    lineupPlayerPatch: LineupPlayerPatch, options?: RequestInit): Promise<LineupPlayer> => {
+
+  return customFetch<LineupPlayer>(getUpdateLineupPlayerUrl(id,playerId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      lineupPlayerPatch,)
+  }
+);}
+
+
+
+
+export const getUpdateLineupPlayerMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateLineupPlayer>>, TError,{id: number;playerId: number;data: BodyType<LineupPlayerPatch>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateLineupPlayer>>, TError,{id: number;playerId: number;data: BodyType<LineupPlayerPatch>}, TContext> => {
+
+const mutationKey = ['updateLineupPlayer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateLineupPlayer>>, {id: number;playerId: number;data: BodyType<LineupPlayerPatch>}> = (props) => {
+          const {id,playerId,data} = props ?? {};
+
+          return  updateLineupPlayer(id,playerId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateLineupPlayerMutationResult = NonNullable<Awaited<ReturnType<typeof updateLineupPlayer>>>
+    export type UpdateLineupPlayerMutationBody = BodyType<LineupPlayerPatch>
+    export type UpdateLineupPlayerMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a lineup player's role or isStarting
+ */
+export const useUpdateLineupPlayer = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateLineupPlayer>>, TError,{id: number;playerId: number;data: BodyType<LineupPlayerPatch>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateLineupPlayer>>,
+        TError,
+        {id: number;playerId: number;data: BodyType<LineupPlayerPatch>},
+        TContext
+      > => {
+      return useMutation(getUpdateLineupPlayerMutationOptions(options));
     }
 
 export const getRemoveLineupPlayerUrl = (id: number,
