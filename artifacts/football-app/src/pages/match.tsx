@@ -98,25 +98,43 @@ const EVENT_INFO: Record<string, { emoji: string; label: string }> = {
 
 const SHOW_LABEL = new Set(["penalty_goal", "ten_meter_goal", "substitution", "penalty_missed"]);
 
-function YellowCard() {
-  return <div className="w-[18px] h-[25px] rounded-[3px] bg-yellow-400 shadow-md" />;
+const CARD_Y = "bg-[#FFE600]";
+const CARD_R = "bg-[#E91E63]";
+
+function YellowCard({ w = 22, h = 30 }: { w?: number; h?: number }) {
+  return (
+    <div
+      className={`${CARD_Y} rounded-[4px] shadow-lg`}
+      style={{ width: w, height: h }}
+    />
+  );
 }
-function RedCard() {
-  return <div className="w-[18px] h-[25px] rounded-[3px] bg-rose-500 shadow-md" />;
+function RedCard({ w = 22, h = 30 }: { w?: number; h?: number }) {
+  return (
+    <div
+      className={`${CARD_R} rounded-[4px] shadow-lg`}
+      style={{ width: w, height: h }}
+    />
+  );
 }
 function SecondYellowRedCard() {
   return (
-    <div className="relative w-[26px] h-[26px]">
-      <div className="absolute bottom-0 right-0 w-[18px] h-[25px] rounded-[3px] bg-yellow-400 shadow" />
-      <div className="absolute top-0 left-0 w-[18px] h-[25px] rounded-[3px] bg-rose-500 shadow-md" />
+    <div className="relative" style={{ width: 30, height: 32 }}>
+      <div className={`absolute bottom-0 right-0 ${CARD_Y} rounded-[4px] shadow`}
+        style={{ width: 20, height: 28 }} />
+      <div className={`absolute top-0 left-0 ${CARD_R} rounded-[4px] shadow-lg`}
+        style={{ width: 20, height: 28 }} />
     </div>
   );
 }
 
+const CARD_TYPES = new Set(["yellow_card", "red_card", "second_yellow_red"]);
+
 function EventIcon({ type }: { type: string }) {
   const info = EVENT_INFO[type] ?? { emoji: "•", label: type };
+  const isCard = CARD_TYPES.has(type);
   return (
-    <div className="w-11 h-11 rounded-2xl bg-[#141e2e] flex items-center justify-center text-[18px] shrink-0 z-10 border border-white/5 overflow-hidden">
+    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-[18px] shrink-0 z-10 overflow-hidden ${isCard ? "bg-transparent border-0" : "bg-[#141e2e] border border-white/5"}`}>
       {type === "substitution"
         ? <SubstitutionIcon />
         : type === "penalty_goal"
