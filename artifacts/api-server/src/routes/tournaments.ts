@@ -37,8 +37,8 @@ router.get("/tournaments/active", async (req, res) => {
     const allMatches = await db
       .select({ match: matchesTable, homeTeam, awayTeam })
       .from(matchesTable)
-      .innerJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
-      .innerJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
+      .leftJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
+      .leftJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
       .where(eq(matchesTable.tournamentId, t.id));
 
     const total = allMatches.length;
@@ -99,6 +99,8 @@ router.delete("/tournaments/:id", async (req, res) => {
   res.status(204).send();
 });
 
+const TBD_TEAM = { id: 0, name: "TBD", shortName: "TBD", logoUrl: null, country: null, sport: "football" as const, createdAt: new Date() };
+
 router.get("/tournaments/:id/matches", async (req, res) => {
   const id = Number(req.params.id);
   const homeTeam = alias(teamsTable, "homeTeam");
@@ -107,15 +109,15 @@ router.get("/tournaments/:id/matches", async (req, res) => {
   const rows = await db
     .select({ match: matchesTable, homeTeam, awayTeam })
     .from(matchesTable)
-    .innerJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
-    .innerJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
+    .leftJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
+    .leftJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
     .where(eq(matchesTable.tournamentId, id))
     .orderBy(matchesTable.kickoffAt);
 
   res.json(rows.map(row => ({
     id: row.match.id,
-    homeTeam: row.homeTeam,
-    awayTeam: row.awayTeam,
+    homeTeam: row.homeTeam ?? TBD_TEAM,
+    awayTeam: row.awayTeam ?? TBD_TEAM,
     homeScore: row.match.homeScore,
     awayScore: row.match.awayScore,
     status: row.match.status,
@@ -199,8 +201,8 @@ router.get("/tournaments/:id/standings", async (req, res) => {
   const allMatches = await db
     .select({ match: matchesTable, homeTeam, awayTeam })
     .from(matchesTable)
-    .innerJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
-    .innerJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
+    .leftJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
+    .leftJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
     .where(and(eq(matchesTable.tournamentId, id), eq(matchesTable.status, "finished")));
 
   const format = tournament.format ?? "league";
