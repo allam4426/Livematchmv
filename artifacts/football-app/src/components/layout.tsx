@@ -30,9 +30,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="max-w-lg mx-auto md:max-w-7xl flex h-12 items-center justify-between px-4">
           <Link href="/">
             <span className="flex items-center gap-2 cursor-pointer">
-              <img src="/logo.png" alt="LiveMatch" className="h-8 w-8 object-contain rounded-lg" />
-              <span className="font-black text-xl tracking-tight text-primary" style={{ fontFamily: "Georgia, serif", fontStyle: "italic" }}>
-                LiveMatch
+              <img src="/logo.png" alt="Livematchmv" className="h-8 w-8 object-contain rounded-lg" />
+              <span className="font-black text-xl tracking-tight leading-none">
+                <span className="text-primary">Live</span><span className="text-foreground">matchmv</span>
               </span>
             </span>
           </Link>

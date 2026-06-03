@@ -45,7 +45,7 @@ function LoginPage() {
             <Lock className="w-7 h-7 text-primary" />
           </div>
           <h1 className="text-2xl font-black text-foreground">Admin Access</h1>
-          <p className="text-sm text-muted-foreground mt-1">FootballLive control panel</p>
+          <p className="text-sm text-muted-foreground mt-1">Livematchmv control panel</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
