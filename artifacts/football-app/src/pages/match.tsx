@@ -50,12 +50,13 @@ type Tab = "Summary" | "Squad" | "Standings";
 
 type EventPhase = "pso" | "et" | "h2" | "h1";
 
-function getEventPhase(minute: string): EventPhase {
+function getEventPhase(minute: string, sport?: string | null): EventPhase {
   if (!minute || minute === "PSO") return "pso";
   const base = parseInt(minute.split("+")[0], 10);
   if (isNaN(base)) return "pso";
-  if (base > 90) return "et";
-  if (base > 45) return "h2";
+  const isFutsal = sport === "futsal";
+  if (base > (isFutsal ? 40 : 90)) return "et";
+  if (base > (isFutsal ? 20 : 45)) return "h2";
   return "h1";
 }
 
@@ -71,30 +72,24 @@ function PhaseSeparator({ label }: { label: string }) {
   );
 }
 
-function EventDot({ type }: { type: string }) {
-  const styles: Record<string, string> = {
-    goal:            "bg-emerald-500 text-white",
-    penalty_goal:    "bg-emerald-500 text-white",
-    own_goal:        "bg-orange-500 text-white",
-    yellow_card:     "bg-amber-400 text-white",
-    red_card:        "bg-red-500 text-white",
-    penalty_missed:  "bg-red-500 text-white",
-    substitution:    "bg-blue-500 text-white",
-    penalty_awarded: "bg-blue-400 text-white",
-    mvp:             "bg-amber-400 text-white",
-  };
-  const icons: Record<string, string> = {
-    goal:            "⚽", penalty_goal: "⚽", own_goal: "⚽",
-    yellow_card:     "■",  red_card:     "■",
-    penalty_missed:  "✕",  substitution: "↕",
-    penalty_awarded: "P",  mvp:          "★",
-  };
+const EVENT_INFO: Record<string, { emoji: string; label: string }> = {
+  goal:               { emoji: "⚽", label: "Goal" },
+  penalty_goal:       { emoji: "⚽", label: "Pen. Goal" },
+  own_goal:           { emoji: "⚽", label: "Own Goal" },
+  yellow_card:        { emoji: "🟨", label: "Yellow" },
+  red_card:           { emoji: "🟥", label: "Red Card" },
+  second_yellow_red:  { emoji: "🟨🟥", label: "2nd Yellow" },
+  penalty_missed:     { emoji: "❌", label: "Pen. Missed" },
+  penalty_awarded:    { emoji: "📋", label: "Penalty" },
+  substitution:       { emoji: "🔄", label: "Sub" },
+  mvp:                { emoji: "⭐", label: "MVP" },
+};
+
+function EventIcon({ type }: { type: string }) {
+  const info = EVENT_INFO[type] ?? { emoji: "•", label: type };
   return (
-    <div className={cn(
-      "w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-black shrink-0",
-      styles[type] ?? "bg-muted-foreground/30 text-white"
-    )}>
-      {icons[type] ?? "•"}
+    <div className="w-11 h-11 rounded-2xl bg-[#141e2e] flex items-center justify-center text-[18px] shrink-0 z-10 border border-white/5">
+      {info.emoji}
     </div>
   );
 }
@@ -112,45 +107,45 @@ interface SummaryEvent {
 
 function EventRow({ event, homeTeamId, isPSO }: { event: SummaryEvent; homeTeamId: number; isPSO?: boolean }) {
   const isHome = event.teamId === homeTeamId;
-  const minuteLabel = isPSO ? "PEN" : event.minute.includes("+") ? `${event.minute}'` : `${event.minute}'`;
+  const minuteLabel = isPSO ? "PEN" : `${event.minute}'`;
+  const info = EVENT_INFO[event.type] ?? { emoji: "•", label: event.type };
   const subOut = event.type === "substitution" && event.description
     ? event.description.replace(/^Out:\s*/i, "").split(" · ")[0]
     : null;
 
-  const minutePill = (
-    <div className="px-2.5 py-1 rounded-lg bg-foreground/[0.07] min-w-[38px] text-center shrink-0">
-      <span className="text-[11px] font-bold text-foreground/60 tabular-nums">{minuteLabel}</span>
-    </div>
-  );
-  const dot = <EventDot type={event.type} />;
+  const icon = <EventIcon type={event.type} />;
 
-  const playerBlock = (
-    <div className={cn("flex flex-col gap-0.5 min-w-0 max-w-[120px]", isHome ? "items-end text-right" : "items-start text-left")}>
+  const textBlock = (
+    <div className={cn("flex flex-col min-w-0 max-w-[130px]", isHome ? "items-end text-right" : "items-start text-left")}>
+      <span className="text-[10px] text-muted-foreground/50 tabular-nums leading-none mb-0.5">{minuteLabel}</span>
+      <span className="text-sm font-black text-foreground leading-tight">{info.label}</span>
       {event.playerName && (
-        <span className="text-[13px] font-bold text-foreground leading-tight truncate w-full">{event.playerName}</span>
+        <span className="text-[11px] text-muted-foreground leading-none mt-0.5 truncate w-full">
+          {event.playerNumber ? `#${event.playerNumber} ` : ""}{event.playerName}
+        </span>
       )}
       {event.assistPlayerName && (
-        <span className="text-[11px] text-muted-foreground leading-none truncate w-full">{event.assistPlayerName}</span>
+        <span className="text-[10px] text-muted-foreground/50 leading-none truncate w-full">▷ {event.assistPlayerName}</span>
       )}
       {subOut && !event.assistPlayerName && (
-        <span className="text-[11px] text-muted-foreground leading-none truncate w-full">{subOut}</span>
+        <span className="text-[10px] text-muted-foreground/50 leading-none truncate w-full">↓ {subOut}</span>
       )}
     </div>
   );
 
   return (
-    <div className="flex items-center py-2">
+    <div className="flex items-center py-1.5">
       {isHome ? (
         <>
-          <div className="flex-1 flex justify-end pr-2">{playerBlock}</div>
-          <div className="flex items-center gap-1.5 shrink-0">{dot}{minutePill}</div>
+          <div className="flex-1 flex justify-end pr-2.5">{textBlock}</div>
+          {icon}
           <div className="flex-1" />
         </>
       ) : (
         <>
           <div className="flex-1" />
-          <div className="flex items-center gap-1.5 shrink-0">{minutePill}{dot}</div>
-          <div className="flex-1 flex justify-start pl-2">{playerBlock}</div>
+          {icon}
+          <div className="flex-1 flex justify-start pl-2.5">{textBlock}</div>
         </>
       )}
     </div>
@@ -159,6 +154,8 @@ function EventRow({ event, homeTeamId, isPSO }: { event: SummaryEvent; homeTeamI
 
 function SummaryTab({ match }: { match: MatchDetail }) {
   const rawEvents = (match.events ?? []) as SummaryEvent[];
+  const sport = match.sport;
+  const phase = (minute: string) => getEventPhase(minute, sport);
 
   if (rawEvents.length === 0) {
     return (
@@ -170,10 +167,10 @@ function SummaryTab({ match }: { match: MatchDetail }) {
 
   const mvpEvents    = rawEvents.filter(e => e.type === "mvp");
   const lineEvents   = rawEvents.filter(e => e.type !== "mvp");
-  const psoEvents    = lineEvents.filter(e => getEventPhase(e.minute) === "pso");
-  const etEvents     = [...lineEvents.filter(e => getEventPhase(e.minute) === "et")].reverse();
-  const h2Events     = [...lineEvents.filter(e => getEventPhase(e.minute) === "h2")].reverse();
-  const h1Events     = [...lineEvents.filter(e => getEventPhase(e.minute) === "h1")].reverse();
+  const psoEvents    = lineEvents.filter(e => phase(e.minute) === "pso");
+  const etEvents     = [...lineEvents.filter(e => phase(e.minute) === "et")].reverse();
+  const h2Events     = [...lineEvents.filter(e => phase(e.minute) === "h2")].reverse();
+  const h1Events     = [...lineEvents.filter(e => phase(e.minute) === "h1")].reverse();
 
   // HT score from H1 goal events
   const goalTypes = ["goal", "penalty_goal"];

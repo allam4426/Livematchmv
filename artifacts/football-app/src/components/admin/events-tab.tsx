@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 /* ─── types ─── */
 type EventType =
-  | "goal" | "yellow_card" | "red_card" | "own_goal"
+  | "goal" | "yellow_card" | "red_card" | "second_yellow_red" | "own_goal"
   | "penalty_awarded" | "penalty_goal" | "penalty_missed"
   | "substitution" | "mvp";
 
@@ -117,7 +117,7 @@ type ModalState = {
 };
 
 const EVENT_ICON_MAP: Record<string, string> = {
-  goal: "⚽", yellow_card: "🟨", red_card: "🟥", own_goal: "↩⚽",
+  goal: "⚽", yellow_card: "🟨", red_card: "🟥", second_yellow_red: "🟨🟥", own_goal: "↩⚽",
   penalty_awarded: "P!", penalty_goal: "P⚽", penalty_missed: "P✗",
   substitution: "↕", mvp: "⭐",
 };
@@ -315,15 +315,16 @@ function ScoreBtn({ onClick, children }: { onClick: () => void; children: React.
 
 /* ─── log icon ─── */
 const LOG_ICONS: Record<string, { icon: string; label: string; color: string }> = {
-  goal:             { icon: "⚽", label: "Goal", color: "text-emerald-400" },
-  yellow_card:      { icon: "🟨", label: "Yellow", color: "text-yellow-400" },
-  red_card:         { icon: "🟥", label: "Red Card", color: "text-red-400" },
-  own_goal:         { icon: "↩⚽", label: "Own Goal", color: "text-orange-400" },
-  penalty_awarded:  { icon: "P!", label: "Penalty", color: "text-blue-400" },
-  penalty_goal:     { icon: "P⚽", label: "Pen. Goal", color: "text-emerald-400" },
-  penalty_missed:   { icon: "P✗", label: "Pen. Miss", color: "text-red-400" },
-  substitution:     { icon: "↕", label: "Sub", color: "text-purple-400" },
-  mvp:              { icon: "⭐", label: "MVP", color: "text-amber-400" },
+  goal:               { icon: "⚽", label: "Goal",            color: "text-emerald-400" },
+  yellow_card:        { icon: "🟨", label: "Yellow",          color: "text-yellow-400" },
+  red_card:           { icon: "🟥", label: "Red Card",        color: "text-red-400" },
+  second_yellow_red:  { icon: "🟨🟥", label: "2nd Yellow+Red", color: "text-orange-400" },
+  own_goal:           { icon: "↩⚽", label: "Own Goal",       color: "text-orange-400" },
+  penalty_awarded:    { icon: "P!", label: "Penalty",         color: "text-blue-400" },
+  penalty_goal:       { icon: "P⚽", label: "Pen. Goal",      color: "text-emerald-400" },
+  penalty_missed:     { icon: "P✗", label: "Pen. Miss",       color: "text-red-400" },
+  substitution:       { icon: "↕", label: "Sub",             color: "text-purple-400" },
+  mvp:                { icon: "⭐", label: "MVP",             color: "text-amber-400" },
 };
 
 /* ─── main component ─── */
@@ -341,6 +342,7 @@ export function EventsTab() {
 
   const { data: allMatches } = useListMatches({ limit: 100 });
   const match = (allMatches ?? []).find(m => m.id === selectedMatchId);
+  const isFutsal = match?.sport === "futsal";
   const isLive = match?.status === "live";
   const isFinished = match?.status === "finished";
   const isHalfTime = match?.minute === "HT";
@@ -351,7 +353,7 @@ export function EventsTab() {
     if (!m || m === "HT" || m === "ET_HT" || m === "PSO") return 0;
     return parseInt(m.split("+")[0], 10) || 0;
   })();
-  const isETPhase = minuteNum > 90;
+  const isETPhase = !isFutsal && minuteNum > 90;
 
   const { data: events, isLoading: evLoading } = useListMatchEvents(selectedMatchId, {
     query: { enabled: !!selectedMatchId, queryKey: getListMatchEventsQueryKey(selectedMatchId), refetchInterval: isLive ? 15000 : false },
@@ -533,13 +535,14 @@ export function EventsTab() {
 
   /* event tile config */
   const EVENT_TILES: { type: EventType; label: string; bg: string; icon: string }[] = [
-    { type: "goal",           label: "Goal",           bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "⚽" },
-    { type: "yellow_card",    label: "Yellow Card",    bg: "bg-[#7a5800] hover:bg-[#8f6600]", icon: "🟨" },
-    { type: "red_card",       label: "Red Card",       bg: "bg-[#6b1111] hover:bg-[#801313]", icon: "🟥" },
-    { type: "substitution",   label: "Substitution",   bg: "bg-[#0d3060] hover:bg-[#104080]", icon: "🔄" },
-    { type: "own_goal",       label: "Own Goal",       bg: "bg-[#5a2d00] hover:bg-[#6e3700]", icon: "↩⚽" },
-    { type: "penalty_goal",   label: "Pen. Goal",      bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "P⚽" },
-    { type: "penalty_missed", label: "Pen. Missed",    bg: "bg-[#4a1a1a] hover:bg-[#5a2020]", icon: "P✗" },
+    { type: "goal",               label: "Goal",            bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "⚽" },
+    { type: "yellow_card",        label: "Yellow Card",     bg: "bg-[#7a5800] hover:bg-[#8f6600]", icon: "🟨" },
+    { type: "red_card",           label: "Red Card",        bg: "bg-[#6b1111] hover:bg-[#801313]", icon: "🟥" },
+    { type: "second_yellow_red",  label: "2nd Yellow+Red",  bg: "bg-[#7a3200] hover:bg-[#8f3c00]", icon: "🟨🟥" },
+    { type: "substitution",       label: "Substitution",    bg: "bg-[#0d3060] hover:bg-[#104080]", icon: "🔄" },
+    { type: "own_goal",           label: "Own Goal",        bg: "bg-[#5a2d00] hover:bg-[#6e3700]", icon: "↩⚽" },
+    { type: "penalty_goal",       label: "Pen. Goal",       bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "P⚽" },
+    { type: "penalty_missed",     label: "Pen. Missed",     bg: "bg-[#4a1a1a] hover:bg-[#5a2020]", icon: "P✗" },
   ];
 
   return (
@@ -732,16 +735,23 @@ export function EventsTab() {
                       <span className="text-base">⏹</span> Full Time
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={handleExtraTime}
-                      className="bg-orange-800/60 hover:bg-orange-700/70 border border-orange-500/30 text-orange-300 font-black py-2.5 rounded-2xl text-xs transition-all active:scale-[0.98]">
-                      ⏱ Extra Time
-                    </button>
+                  {isFutsal ? (
                     <button onClick={handlePenaltyShootout}
-                      className="bg-purple-800/60 hover:bg-purple-700/70 border border-purple-500/30 text-purple-300 font-black py-2.5 rounded-2xl text-xs transition-all active:scale-[0.98]">
-                      🥅 Penalties
+                      className="w-full bg-purple-800/60 hover:bg-purple-700/70 border border-purple-500/30 text-purple-300 font-black py-2.5 rounded-2xl text-xs transition-all active:scale-[0.98]">
+                      🥅 Penalty Shootout
                     </button>
-                  </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button onClick={handleExtraTime}
+                        className="bg-orange-800/60 hover:bg-orange-700/70 border border-orange-500/30 text-orange-300 font-black py-2.5 rounded-2xl text-xs transition-all active:scale-[0.98]">
+                        ⏱ Extra Time
+                      </button>
+                      <button onClick={handlePenaltyShootout}
+                        className="bg-purple-800/60 hover:bg-purple-700/70 border border-purple-500/30 text-purple-300 font-black py-2.5 rounded-2xl text-xs transition-all active:scale-[0.98]">
+                        🥅 Penalties
+                      </button>
+                    </div>
+                  )}
                 </>
               ) : (
                 <button onClick={handleRestart}
