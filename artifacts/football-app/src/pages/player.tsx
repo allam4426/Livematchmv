@@ -1,0 +1,173 @@
+import { useGetSquadPlayerStats } from "@workspace/api-client-react";
+import { useParams, Link } from "wouter";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ChevronLeft, User } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+function PlayerAvatar({ photoUrl, name }: { photoUrl?: string | null; name: string }) {
+  const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  const colors = ["bg-blue-600","bg-emerald-600","bg-purple-600","bg-orange-600","bg-teal-600","bg-red-600","bg-indigo-600","bg-pink-600"];
+  const color = colors[name.charCodeAt(0) % colors.length];
+
+  if (photoUrl) {
+    return (
+      <img
+        src={photoUrl}
+        alt={name}
+        className="w-24 h-24 rounded-full object-cover border-4 border-white/10 shadow-2xl"
+        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+      />
+    );
+  }
+  return (
+    <div className={cn("w-24 h-24 rounded-full flex items-center justify-center text-3xl font-black text-white shadow-2xl border-4 border-white/10", color)}>
+      {initials}
+    </div>
+  );
+}
+
+function StatCard({ value, label, color = "text-foreground" }: { value: number; label: string; color?: string }) {
+  return (
+    <div className="bg-card border border-border rounded-2xl p-4 flex flex-col items-center gap-1">
+      <span className={cn("text-3xl font-black tabular-nums", color)}>{value}</span>
+      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-center">{label}</span>
+    </div>
+  );
+}
+
+const POSITION_BADGE: Record<string, string> = {
+  GK: "bg-amber-500/15 text-amber-400 border-amber-500/25",
+  RB: "bg-blue-500/15 text-blue-400 border-blue-500/25",
+  LB: "bg-blue-500/15 text-blue-400 border-blue-500/25",
+  CB: "bg-blue-500/15 text-blue-400 border-blue-500/25",
+  CDM: "bg-cyan-500/15 text-cyan-400 border-cyan-500/25",
+  CM: "bg-cyan-500/15 text-cyan-400 border-cyan-500/25",
+  CAM: "bg-cyan-500/15 text-cyan-400 border-cyan-500/25",
+  RM: "bg-cyan-500/15 text-cyan-400 border-cyan-500/25",
+  LM: "bg-cyan-500/15 text-cyan-400 border-cyan-500/25",
+  RW: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
+  LW: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
+  CF: "bg-red-500/15 text-red-400 border-red-500/25",
+  ST: "bg-red-500/15 text-red-400 border-red-500/25",
+};
+
+function posBadgeClass(pos?: string | null) {
+  if (!pos) return "bg-muted text-muted-foreground border-border";
+  return POSITION_BADGE[pos.toUpperCase()] ?? "bg-muted text-muted-foreground border-border";
+}
+
+export default function PlayerProfilePage() {
+  const { id } = useParams();
+  const playerId = parseInt(id || "0", 10);
+
+  const { data: stats, isLoading } = useGetSquadPlayerStats(playerId);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4 px-4 pt-4 pb-8">
+        <Skeleton className="h-8 w-20" />
+        <Skeleton className="h-48 w-full rounded-2xl" />
+        <div className="grid grid-cols-3 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="py-24 text-center px-4">
+        <User className="w-12 h-12 mx-auto mb-4 text-muted-foreground/30" />
+        <h2 className="text-xl font-bold mb-3">Player not found</h2>
+        <Link href="/players">
+          <span className="text-primary text-sm font-semibold cursor-pointer">← Back to Players</span>
+        </Link>
+      </div>
+    );
+  }
+
+  const { player, team } = stats;
+  const isCaptain = player.role === "captain";
+
+  return (
+    <div className="pb-10">
+      {/* Back */}
+      <div className="flex items-center gap-2 px-4 pt-4 pb-3">
+        <Link href="/players">
+          <span className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
+            <ChevronLeft className="w-4 h-4" />
+            Players
+          </span>
+        </Link>
+      </div>
+
+      {/* Hero card */}
+      <div className="mx-4 featured-gradient rounded-2xl overflow-hidden border border-white/5 shadow-2xl mb-5">
+        <div className="flex items-center gap-5 px-5 py-6">
+          <div className="relative shrink-0">
+            <PlayerAvatar photoUrl={player.photoUrl} name={player.playerName} />
+            {isCaptain && (
+              <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-amber-400 border-2 border-background flex items-center justify-center text-[10px] font-black text-black">C</span>
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-black text-white leading-tight mb-1">{player.playerName}</h1>
+
+            {/* Badges */}
+            <div className="flex items-center gap-1.5 flex-wrap mb-3">
+              {player.playerNumber && (
+                <span className="text-xs font-bold text-primary bg-primary/20 border border-primary/30 rounded-lg px-2 py-0.5">
+                  #{player.playerNumber}
+                </span>
+              )}
+              {player.position && (
+                <span className={cn("text-xs font-bold border rounded-lg px-2 py-0.5", posBadgeClass(player.position))}>
+                  {player.position}
+                </span>
+              )}
+              {isCaptain && (
+                <span className="text-xs font-bold text-amber-400 bg-amber-500/15 border border-amber-500/25 rounded-lg px-2 py-0.5">
+                  Captain
+                </span>
+              )}
+            </div>
+
+            {/* Team */}
+            {team && (
+              <div className="flex items-center gap-2">
+                {team.logoUrl && (
+                  <img src={team.logoUrl} alt={team.name} className="w-5 h-5 object-contain rounded shrink-0" />
+                )}
+                <span className="text-sm font-semibold text-white/70">{team.name}</span>
+              </div>
+            )}
+            {player.nationality && (
+              <p className="text-xs text-white/40 mt-1">{player.nationality}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Bio */}
+        {player.bio && (
+          <div className="px-5 pb-5 border-t border-white/10 pt-4">
+            <p className="text-sm text-white/60 leading-relaxed">{player.bio}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Stats grid */}
+      <div className="px-4 mb-2">
+        <h2 className="text-xs font-black text-muted-foreground uppercase tracking-wider mb-3">Career Stats</h2>
+        <div className="grid grid-cols-3 gap-3">
+          <StatCard value={stats.goals} label="Goals" color="text-primary" />
+          <StatCard value={stats.assists} label="Assists" color="text-emerald-400" />
+          <StatCard value={stats.appearances} label="Apps" />
+          <StatCard value={stats.yellowCards} label="Yellow" color="text-yellow-400" />
+          <StatCard value={stats.redCards} label="Red" color="text-red-400" />
+          <StatCard value={stats.ownGoals} label="Own Goals" color="text-muted-foreground" />
+        </div>
+      </div>
+    </div>
+  );
+}

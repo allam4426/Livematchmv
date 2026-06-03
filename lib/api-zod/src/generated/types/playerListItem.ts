@@ -5,21 +5,24 @@
  * FootballLive API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { SquadPlayerRole } from './squadPlayerRole';
 
-export interface SquadPlayer {
+export interface PlayerListItem {
   id: number;
   teamId: number;
   playerNumber: string;
   playerName: string;
   /** @nullable */
   position?: string | null;
-  role: SquadPlayerRole;
+  role: string;
   isStarting: boolean;
   /** @nullable */
   photoUrl?: string | null;
   /** @nullable */
   nationality?: string | null;
+  teamName?: string;
   /** @nullable */
-  bio?: string | null;
+  teamShortName?: string | null;
+  /** @nullable */
+  teamLogoUrl?: string | null;
+  teamSport?: string;
 }

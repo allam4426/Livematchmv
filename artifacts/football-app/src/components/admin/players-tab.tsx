@@ -24,6 +24,9 @@ const EMPTY_FORM = {
   position: "",
   role: "player" as Role,
   isStarting: false,
+  photoUrl: "",
+  nationality: "",
+  bio: "",
 };
 
 export function PlayersTab() {
@@ -62,6 +65,9 @@ export function PlayersTab() {
         position: form.position || undefined,
         role: form.role,
         isStarting: form.isStarting,
+        photoUrl: form.photoUrl.trim() || undefined,
+        nationality: form.nationality.trim() || undefined,
+        bio: form.bio.trim() || undefined,
       },
     }, {
       onSuccess: () => {
@@ -83,6 +89,9 @@ export function PlayersTab() {
         position: editForm.position || undefined,
         role: editForm.role,
         isStarting: editForm.isStarting,
+        photoUrl: editForm.photoUrl.trim() || undefined,
+        nationality: editForm.nationality.trim() || undefined,
+        bio: editForm.bio.trim() || undefined,
       },
     }, {
       onSuccess: () => { setEditPlayer(null); invalidateSquad(); },
@@ -102,6 +111,9 @@ export function PlayersTab() {
       position: p.position ?? "",
       role: p.role as Role,
       isStarting: p.isStarting,
+      photoUrl: p.photoUrl ?? "",
+      nationality: p.nationality ?? "",
+      bio: p.bio ?? "",
     });
   };
 
@@ -204,6 +216,21 @@ export function PlayersTab() {
                     onChange={e => setForm(f => ({ ...f, isStarting: e.target.checked }))} className="w-4 h-4 rounded" />
                   <label htmlFor="isStarting" className="text-xs font-semibold text-muted-foreground">Starter (XI)</label>
                 </div>
+                <div className="col-span-2">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Photo URL (optional)</label>
+                  <input value={form.photoUrl} onChange={e => setForm(f => ({ ...f, photoUrl: e.target.value }))}
+                    placeholder="https://…" className="admin-input" />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Nationality (optional)</label>
+                  <input value={form.nationality} onChange={e => setForm(f => ({ ...f, nationality: e.target.value }))}
+                    placeholder="e.g. Maldivian" className="admin-input" />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Bio (optional)</label>
+                  <textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
+                    placeholder="Short player biography…" rows={2} className="admin-input resize-none" />
+                </div>
               </div>
               <button type="submit" disabled={addPlayer.isPending}
                 className="w-full bg-primary text-white rounded-xl py-2.5 text-sm font-bold disabled:opacity-50">
@@ -288,6 +315,24 @@ export function PlayersTab() {
                               <input type="checkbox" id={`st-${player.id}`} checked={editForm.isStarting}
                                 onChange={e => setEditForm(f => ({ ...f, isStarting: e.target.checked }))} className="w-4 h-4 rounded" />
                               <label htmlFor={`st-${player.id}`} className="text-xs font-semibold text-muted-foreground">Starter (XI)</label>
+                            </div>
+                            <div className="col-span-2">
+                              <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Photo URL</label>
+                              <input value={editForm.photoUrl}
+                                onChange={e => setEditForm(f => ({ ...f, photoUrl: e.target.value }))}
+                                className="admin-input" placeholder="https://…" />
+                            </div>
+                            <div className="col-span-2">
+                              <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Nationality</label>
+                              <input value={editForm.nationality}
+                                onChange={e => setEditForm(f => ({ ...f, nationality: e.target.value }))}
+                                className="admin-input" placeholder="e.g. Maldivian" />
+                            </div>
+                            <div className="col-span-2">
+                              <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Bio</label>
+                              <textarea value={editForm.bio}
+                                onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))}
+                                className="admin-input resize-none" rows={2} placeholder="Short biography…" />
                             </div>
                           </div>
                           <div className="flex items-center gap-2">

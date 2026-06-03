@@ -256,7 +256,10 @@ export const GetTeamSquadResponseItem = zod.object({
   "playerName": zod.string(),
   "position": zod.string().nullish(),
   "role": zod.enum(['player', 'coach', 'captain']),
-  "isStarting": zod.boolean()
+  "isStarting": zod.boolean(),
+  "photoUrl": zod.string().nullish(),
+  "nationality": zod.string().nullish(),
+  "bio": zod.string().nullish()
 })
 export const GetTeamSquadResponse = zod.array(GetTeamSquadResponseItem)
 
@@ -273,7 +276,10 @@ export const AddSquadPlayerBody = zod.object({
   "playerName": zod.string(),
   "position": zod.string().optional(),
   "role": zod.enum(['player', 'coach', 'captain']).optional(),
-  "isStarting": zod.boolean().optional()
+  "isStarting": zod.boolean().optional(),
+  "photoUrl": zod.string().optional(),
+  "nationality": zod.string().optional(),
+  "bio": zod.string().optional()
 })
 
 
@@ -290,7 +296,10 @@ export const UpdateSquadPlayerBody = zod.object({
   "playerName": zod.string(),
   "position": zod.string().optional(),
   "role": zod.enum(['player', 'coach', 'captain']).optional(),
-  "isStarting": zod.boolean().optional()
+  "isStarting": zod.boolean().optional(),
+  "photoUrl": zod.string().optional(),
+  "nationality": zod.string().optional(),
+  "bio": zod.string().optional()
 })
 
 export const UpdateSquadPlayerResponse = zod.object({
@@ -300,7 +309,10 @@ export const UpdateSquadPlayerResponse = zod.object({
   "playerName": zod.string(),
   "position": zod.string().nullish(),
   "role": zod.enum(['player', 'coach', 'captain']),
-  "isStarting": zod.boolean()
+  "isStarting": zod.boolean(),
+  "photoUrl": zod.string().nullish(),
+  "nationality": zod.string().nullish(),
+  "bio": zod.string().nullish()
 })
 
 
@@ -327,7 +339,10 @@ export const GetSquadPlayerResponse = zod.object({
   "playerName": zod.string(),
   "position": zod.string().nullish(),
   "role": zod.enum(['player', 'coach', 'captain']),
-  "isStarting": zod.boolean()
+  "isStarting": zod.boolean(),
+  "photoUrl": zod.string().nullish(),
+  "nationality": zod.string().nullish(),
+  "bio": zod.string().nullish()
 })
 
 
@@ -346,7 +361,10 @@ export const GetSquadPlayerStatsResponse = zod.object({
   "playerName": zod.string(),
   "position": zod.string().nullish(),
   "role": zod.enum(['player', 'coach', 'captain']),
-  "isStarting": zod.boolean()
+  "isStarting": zod.boolean(),
+  "photoUrl": zod.string().nullish(),
+  "nationality": zod.string().nullish(),
+  "bio": zod.string().nullish()
 }),
   "team": zod.object({
   "id": zod.number(),
@@ -361,6 +379,33 @@ export const GetSquadPlayerStatsResponse = zod.object({
   "ownGoals": zod.number(),
   "appearances": zod.number()
 })
+
+
+/**
+ * @summary List all players across all teams
+ */
+export const ListPlayersQueryParams = zod.object({
+  "sport": zod.coerce.string().optional(),
+  "teamId": zod.coerce.number().optional(),
+  "q": zod.coerce.string().optional()
+})
+
+export const ListPlayersResponseItem = zod.object({
+  "id": zod.number(),
+  "teamId": zod.number(),
+  "playerNumber": zod.string(),
+  "playerName": zod.string(),
+  "position": zod.string().nullish(),
+  "role": zod.string(),
+  "isStarting": zod.boolean(),
+  "photoUrl": zod.string().nullish(),
+  "nationality": zod.string().nullish(),
+  "teamName": zod.string().optional(),
+  "teamShortName": zod.string().nullish(),
+  "teamLogoUrl": zod.string().nullish(),
+  "teamSport": zod.string().optional()
+})
+export const ListPlayersResponse = zod.array(ListPlayersResponseItem)
 
 
 /**

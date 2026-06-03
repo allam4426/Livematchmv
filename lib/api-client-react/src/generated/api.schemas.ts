@@ -516,6 +516,12 @@ export interface SquadPlayer {
   position?: string | null;
   role: SquadPlayerRole;
   isStarting: boolean;
+  /** @nullable */
+  photoUrl?: string | null;
+  /** @nullable */
+  nationality?: string | null;
+  /** @nullable */
+  bio?: string | null;
 }
 
 export type SquadPlayerInputRole = typeof SquadPlayerInputRole[keyof typeof SquadPlayerInputRole];
@@ -533,6 +539,30 @@ export interface SquadPlayerInput {
   position?: string;
   role?: SquadPlayerInputRole;
   isStarting?: boolean;
+  photoUrl?: string;
+  nationality?: string;
+  bio?: string;
+}
+
+export interface PlayerListItem {
+  id: number;
+  teamId: number;
+  playerNumber: string;
+  playerName: string;
+  /** @nullable */
+  position?: string | null;
+  role: string;
+  isStarting: boolean;
+  /** @nullable */
+  photoUrl?: string | null;
+  /** @nullable */
+  nationality?: string | null;
+  teamName?: string;
+  /** @nullable */
+  teamShortName?: string | null;
+  /** @nullable */
+  teamLogoUrl?: string | null;
+  teamSport?: string;
 }
 
 export interface LineupPlayer {
@@ -738,6 +768,12 @@ export const ListTeamsSport = {
   futsal: 'futsal',
   all: 'all',
 } as const;
+
+export type ListPlayersParams = {
+sport?: string;
+teamId?: number;
+q?: string;
+};
 
 export type ListTournamentsParams = {
 sport?: ListTournamentsSport;

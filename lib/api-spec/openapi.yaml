@@ -466,6 +466,34 @@ paths:
               schema:
                 $ref: "#/components/schemas/PlayerStats"
 
+  /players:
+    get:
+      operationId: listPlayers
+      tags: [teams]
+      summary: List all players across all teams
+      parameters:
+        - in: query
+          name: sport
+          schema:
+            type: string
+        - in: query
+          name: teamId
+          schema:
+            type: integer
+        - in: query
+          name: q
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of players with team info
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerListItem"
+
   /matches/{id}/lineup/auto:
     post:
       operationId: autoFillLineup
@@ -1570,6 +1598,12 @@ components:
           enum: [player, coach, captain]
         isStarting:
           type: boolean
+        photoUrl:
+          type: ["string", "null"]
+        nationality:
+          type: ["string", "null"]
+        bio:
+          type: ["string", "null"]
 
     SquadPlayerInput:
       type: object
@@ -1586,6 +1620,43 @@ components:
           enum: [player, coach, captain]
         isStarting:
           type: boolean
+        photoUrl:
+          type: string
+        nationality:
+          type: string
+        bio:
+          type: string
+
+    PlayerListItem:
+      type: object
+      required: [id, teamId, playerNumber, playerName, role, isStarting]
+      properties:
+        id:
+          type: integer
+        teamId:
+          type: integer
+        playerNumber:
+          type: string
+        playerName:
+          type: string
+        position:
+          type: ["string", "null"]
+        role:
+          type: string
+        isStarting:
+          type: boolean
+        photoUrl:
+          type: ["string", "null"]
+        nationality:
+          type: ["string", "null"]
+        teamName:
+          type: string
+        teamShortName:
+          type: ["string", "null"]
+        teamLogoUrl:
+          type: ["string", "null"]
+        teamSport:
+          type: string
 
     LineupPlayer:
       type: object

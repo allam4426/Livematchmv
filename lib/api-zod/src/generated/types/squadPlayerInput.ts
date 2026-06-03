@@ -13,4 +13,7 @@ export interface SquadPlayerInput {
   position?: string;
   role?: SquadPlayerInputRole;
   isStarting?: boolean;
+  photoUrl?: string;
+  nationality?: string;
+  bio?: string;
 }

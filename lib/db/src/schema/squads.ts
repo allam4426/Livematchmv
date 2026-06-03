@@ -11,6 +11,9 @@ export const squadsTable = pgTable("squads", {
   position: text("position"),
   role: text("role").notNull().default("player"), // player | coach | captain
   isStarting: boolean("is_starting").notNull().default(true),
+  photoUrl: text("photo_url"),
+  nationality: text("nationality"),
+  bio: text("bio"),
 });
 
 export const insertSquadSchema = createInsertSchema(squadsTable).omit({ id: true });

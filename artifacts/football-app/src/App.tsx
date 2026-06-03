@@ -9,6 +9,8 @@ import NotFound from "./pages/not-found";
 import StreamPage from "./pages/stream";
 import TournamentPage from "./pages/tournament";
 import TournamentsPage from "./pages/tournaments";
+import PlayersPage from "./pages/players";
+import PlayerProfilePage from "./pages/player";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +25,8 @@ export default function App() {
           <Route path="/stream/:id" component={StreamPage} />
           <Route path="/tournament/:id" component={TournamentPage} />
           <Route path="/tournaments" component={TournamentsPage} />
+          <Route path="/players" component={PlayersPage} />
+          <Route path="/player/:id" component={PlayerProfilePage} />
           <Route path="/admin" component={AdminDashboard} />
           <Route component={NotFound} />
         </Switch>

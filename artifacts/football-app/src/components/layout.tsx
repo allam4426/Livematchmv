@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
-import { Home as HomeIcon, Gamepad2, Play, LayoutGrid, Sun, Moon, Trophy } from "lucide-react";
+import { Home as HomeIcon, Gamepad2, Play, LayoutGrid, Sun, Moon, Trophy, Users } from "lucide-react";
 import { useAdminMe } from "@workspace/api-client-react";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -14,6 +14,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/", label: "Home" },
     { href: "/live", label: "Live" },
     { href: "/tournaments", label: "Tournaments" },
+    { href: "/players", label: "Players" },
     ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
   ];
 
@@ -21,6 +22,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/", label: "Home", icon: HomeIcon },
     { href: "/live", label: "Live", icon: Gamepad2 },
     { href: "/tournaments", label: "Cups", icon: Trophy },
+    { href: "/players", label: "Players", icon: Users },
     { href: "/stream/1", label: "Stream", icon: Play },
     ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: LayoutGrid }] : []),
   ];
