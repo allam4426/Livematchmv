@@ -2,7 +2,6 @@ import { type Match } from "@workspace/api-client-react";
 import { TeamLogo } from "./team-logo";
 import { Link } from "wouter";
 import { Play, MapPin, ChevronRight } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 function halfLabel(minute: string | null | undefined, sport?: string | null): string {
@@ -130,44 +129,18 @@ function BannerCard({ match, dim }: { match: Match; dim?: boolean }) {
 }
 
 export function LiveMatchBanner({ matches }: { matches: Match[] }) {
-  const [idx, setIdx] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    setIdx(0);
-  }, [matches.length]);
-
-  useEffect(() => {
-    if (matches.length <= 1) return;
-    timerRef.current = setInterval(() => setIdx(i => (i + 1) % matches.length), 6000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [matches.length]);
-
-  const current = matches[idx] ?? matches[0];
+  const current = matches[0];
   if (!current) return null;
+  const extra = matches.length - 1;
 
   return (
     <div className="px-4 pt-4 pb-2">
       <BannerCard match={current} />
-
-      {/* Dots + more indicator for multiple live matches */}
-      {matches.length > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-2.5">
-          <div className="flex items-center gap-1.5">
-            {matches.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setIdx(i)}
-                className={cn(
-                  "rounded-full transition-all duration-300",
-                  i === idx ? "w-5 h-1.5 bg-red-500" : "w-1.5 h-1.5 bg-white/20 hover:bg-white/40"
-                )}
-              />
-            ))}
-          </div>
+      {extra > 0 && (
+        <div className="flex justify-center mt-2">
           <Link href="/live">
-            <span className="flex items-center gap-0.5 text-[10px] font-bold text-red-400 ml-1">
-              {matches.length} live <ChevronRight className="w-3 h-3" />
+            <span className="flex items-center gap-0.5 text-[11px] font-bold text-red-400">
+              +{extra} more live <ChevronRight className="w-3 h-3" />
             </span>
           </Link>
         </div>
