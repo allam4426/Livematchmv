@@ -13,16 +13,27 @@ import { alias } from "drizzle-orm/pg-core";
 
 const router = Router();
 
+const TBD_TEAM = {
+  id: 0,
+  name: "TBD",
+  shortName: "TBD",
+  logoUrl: null,
+  sport: "football",
+  createdAt: new Date(),
+};
+
 function buildMatch(row: {
   match: typeof matchesTable.$inferSelect;
-  homeTeam: typeof teamsTable.$inferSelect;
-  awayTeam: typeof teamsTable.$inferSelect;
+  homeTeam: typeof teamsTable.$inferSelect | null;
+  awayTeam: typeof teamsTable.$inferSelect | null;
   streamCount: number;
 }) {
+  const homeTeam = row.homeTeam ?? TBD_TEAM;
+  const awayTeam = row.awayTeam ?? TBD_TEAM;
   return {
     id: row.match.id,
-    homeTeam: { ...row.homeTeam, sport: row.homeTeam.sport ?? "football" },
-    awayTeam: { ...row.awayTeam, sport: row.awayTeam.sport ?? "football" },
+    homeTeam: { ...homeTeam, sport: homeTeam.sport ?? "football" },
+    awayTeam: { ...awayTeam, sport: awayTeam.sport ?? "football" },
     homeScore: row.match.homeScore,
     awayScore: row.match.awayScore,
     status: row.match.status,
@@ -69,8 +80,8 @@ router.get("/matches", async (req, res) => {
   const rows = await db
     .select({ match: matchesTable, homeTeam, awayTeam })
     .from(matchesTable)
-    .innerJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
-    .innerJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
+    .leftJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
+    .leftJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(matchesTable.kickoffAt))
     .limit(params.success ? (params.data.limit ?? 50) : 50);
@@ -92,8 +103,8 @@ router.post("/matches", async (req, res) => {
   }
   const { homeTeamId, awayTeamId, homeScore, awayScore, status, minute, competition, competitionLogo, kickoffAt, featured, sport, tournamentId, venue, matchGroup } = parsed.data;
   const [match] = await db.insert(matchesTable).values({
-    homeTeamId,
-    awayTeamId,
+    homeTeamId: homeTeamId ?? null,
+    awayTeamId: awayTeamId ?? null,
     homeScore: homeScore ?? 0,
     awayScore: awayScore ?? 0,
     status: status ?? "scheduled",
@@ -113,8 +124,8 @@ router.post("/matches", async (req, res) => {
   const [row] = await db
     .select({ match: matchesTable, homeTeam, awayTeam })
     .from(matchesTable)
-    .innerJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
-    .innerJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
+    .leftJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
+    .leftJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
     .where(eq(matchesTable.id, match.id));
 
   res.status(201).json(buildMatch({ ...row, streamCount: 0 }));
@@ -132,8 +143,8 @@ router.get("/matches/live", async (req, res) => {
   const rows = await db
     .select({ match: matchesTable, homeTeam, awayTeam })
     .from(matchesTable)
-    .innerJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
-    .innerJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
+    .leftJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
+    .leftJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
     .where(and(...conditions))
     .orderBy(desc(matchesTable.kickoffAt));
 
@@ -155,8 +166,8 @@ router.get("/matches/:id", async (req, res) => {
   const [row] = await db
     .select({ match: matchesTable, homeTeam, awayTeam })
     .from(matchesTable)
-    .innerJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
-    .innerJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
+    .leftJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
+    .leftJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
     .where(eq(matchesTable.id, id));
 
   if (!row) { res.status(404).json({ error: "Match not found" }); return; }
@@ -188,8 +199,8 @@ router.patch("/matches/:id", async (req, res) => {
   const [row] = await db
     .select({ match: matchesTable, homeTeam, awayTeam })
     .from(matchesTable)
-    .innerJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
-    .innerJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
+    .leftJoin(homeTeam, eq(matchesTable.homeTeamId, homeTeam.id))
+    .leftJoin(awayTeam, eq(matchesTable.awayTeamId, awayTeam.id))
     .where(eq(matchesTable.id, id));
 
   const [sc] = await db.select({ cnt: count() }).from(streamsTable).where(eq(streamsTable.matchId, id));

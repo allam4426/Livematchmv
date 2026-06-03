@@ -1443,12 +1443,12 @@ components:
 
     MatchInput:
       type: object
-      required: [homeTeamId, awayTeamId, competition, kickoffAt, sport]
+      required: [competition, kickoffAt, sport]
       properties:
         homeTeamId:
-          type: integer
+          type: ["integer", "null"]
         awayTeamId:
-          type: integer
+          type: ["integer", "null"]
         homeScore:
           type: integer
         awayScore:

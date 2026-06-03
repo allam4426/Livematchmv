@@ -120,10 +120,12 @@ export function MatchesTab() {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.homeTeamId || !form.awayTeamId || !form.competition || !form.kickoffAt) return;
+    if (!form.competition || !form.kickoffAt) return;
     createMatch.mutate({
       data: {
         ...form,
+        homeTeamId: form.homeTeamId || null,
+        awayTeamId: form.awayTeamId || null,
         kickoffAt: new Date(form.kickoffAt).toISOString(),
         tournamentId: form.tournamentId || undefined,
         minute: form.minute || undefined,
@@ -233,16 +235,16 @@ export function MatchesTab() {
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Home Team *</label>
+              <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Home Team <span className="text-muted-foreground/50 normal-case font-normal">(optional)</span></label>
               <select value={form.homeTeamId} onChange={e => setForm(f => ({ ...f, homeTeamId: Number(e.target.value) }))} className="admin-input">
-                <option value={0}>Select team</option>
+                <option value={0}>TBD — announce later</option>
                 {filteredTeams(form.sport).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Away Team *</label>
+              <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Away Team <span className="text-muted-foreground/50 normal-case font-normal">(optional)</span></label>
               <select value={form.awayTeamId} onChange={e => setForm(f => ({ ...f, awayTeamId: Number(e.target.value) }))} className="admin-input">
-                <option value={0}>Select team</option>
+                <option value={0}>TBD — announce later</option>
                 {filteredTeams(form.sport).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>

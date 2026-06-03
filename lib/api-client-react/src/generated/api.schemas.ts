@@ -427,8 +427,10 @@ export const MatchInputSport = {
 } as const;
 
 export interface MatchInput {
-  homeTeamId: number;
-  awayTeamId: number;
+  /** @nullable */
+  homeTeamId?: number | null;
+  /** @nullable */
+  awayTeamId?: number | null;
   homeScore?: number;
   awayScore?: number;
   status?: MatchInputStatus;

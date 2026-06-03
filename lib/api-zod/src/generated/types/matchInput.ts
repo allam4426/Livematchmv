@@ -9,8 +9,10 @@ import type { MatchInputSport } from './matchInputSport';
 import type { MatchInputStatus } from './matchInputStatus';
 
 export interface MatchInput {
-  homeTeamId: number;
-  awayTeamId: number;
+  /** @nullable */
+  homeTeamId?: number | null;
+  /** @nullable */
+  awayTeamId?: number | null;
   homeScore?: number;
   awayScore?: number;
   status?: MatchInputStatus;

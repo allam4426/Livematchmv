@@ -6,8 +6,8 @@ import { tournamentsTable } from "./tournaments";
 
 export const matchesTable = pgTable("matches", {
   id: serial("id").primaryKey(),
-  homeTeamId: integer("home_team_id").notNull().references(() => teamsTable.id),
-  awayTeamId: integer("away_team_id").notNull().references(() => teamsTable.id),
+  homeTeamId: integer("home_team_id").references(() => teamsTable.id, { onDelete: "set null" }),
+  awayTeamId: integer("away_team_id").references(() => teamsTable.id, { onDelete: "set null" }),
   homeScore: integer("home_score").notNull().default(0),
   awayScore: integer("away_score").notNull().default(0),
   status: text("status").notNull().default("scheduled"),

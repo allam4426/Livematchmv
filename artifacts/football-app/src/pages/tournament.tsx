@@ -485,7 +485,7 @@ export default function TournamentPage() {
                   </span>
                 </div>
                 <div className="divide-y divide-border/50">
-                  {groupedMatches[key]?.map((m, i) => <MatchRow key={m.id} match={m} index={i} />)}
+                  {groupedMatches[key]?.map((m, i) => <MatchRow key={m.id} match={m} index={i} showDate={isGroupStage || isKnockout(fmt)} />)}
                 </div>
               </div>
             ))
@@ -592,7 +592,7 @@ export default function TournamentPage() {
                                 url={row.team.logoUrl}
                                 name={row.team.name}
                                 shortName={row.team.shortName}
-                                className="w-4 h-4"
+                                className="w-6 h-6"
                               />
                               <span className="font-semibold text-foreground truncate max-w-[80px]">
                                 {row.team.shortName || row.team.name}

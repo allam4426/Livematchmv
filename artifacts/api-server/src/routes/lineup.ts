@@ -23,10 +23,13 @@ router.post("/matches/:id/lineup/auto", async (req, res) => {
   const [match] = await db.select().from(matchesTable).where(eq(matchesTable.id, matchId));
   if (!match) { res.status(404).json({ error: "Match not found" }); return; }
 
-  // Get squads for both teams
+  const homeTeamId = match.homeTeamId;
+  const awayTeamId = match.awayTeamId;
+
+  // Get squads for both teams (skip TBD slots)
   const [homeSquad, awaySquad] = await Promise.all([
-    db.select().from(squadsTable).where(eq(squadsTable.teamId, match.homeTeamId)),
-    db.select().from(squadsTable).where(eq(squadsTable.teamId, match.awayTeamId)),
+    homeTeamId ? db.select().from(squadsTable).where(eq(squadsTable.teamId, homeTeamId)) : Promise.resolve([]),
+    awayTeamId ? db.select().from(squadsTable).where(eq(squadsTable.teamId, awayTeamId)) : Promise.resolve([]),
   ]);
 
   // Clear existing lineup
@@ -34,22 +37,22 @@ router.post("/matches/:id/lineup/auto", async (req, res) => {
 
   // Insert all squad players as lineup
   const toInsert = [
-    ...homeSquad.map(p => ({
+    ...(homeTeamId ? homeSquad.map(p => ({
       matchId,
-      teamId: match.homeTeamId,
+      teamId: homeTeamId,
       playerNumber: p.playerNumber,
       playerName: p.playerName,
       position: p.position,
       isStarting: p.isStarting,
-    })),
-    ...awaySquad.map(p => ({
+    })) : []),
+    ...(awayTeamId ? awaySquad.map(p => ({
       matchId,
-      teamId: match.awayTeamId,
+      teamId: awayTeamId,
       playerNumber: p.playerNumber,
       playerName: p.playerName,
       position: p.position,
       isStarting: p.isStarting,
-    })),
+    })) : []),
   ];
 
   if (toInsert.length > 0) {

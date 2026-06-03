@@ -662,8 +662,8 @@ export const ListMatchesResponse = zod.array(ListMatchesResponseItem)
  * @summary Create a new match
  */
 export const CreateMatchBody = zod.object({
-  "homeTeamId": zod.number(),
-  "awayTeamId": zod.number(),
+  "homeTeamId": zod.number().nullish(),
+  "awayTeamId": zod.number().nullish(),
   "homeScore": zod.number().optional(),
   "awayScore": zod.number().optional(),
   "status": zod.enum(['live', 'scheduled', 'finished', 'postponed']).optional(),

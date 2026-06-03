@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 
-export function MatchRow({ match, index = 0 }: { match: Match; index?: number }) {
+export function MatchRow({ match, index = 0, showDate = false }: { match: Match; index?: number; showDate?: boolean }) {
   const isLive = match.status === "live";
   const isFinished = match.status === "finished";
 
@@ -47,15 +47,29 @@ export function MatchRow({ match, index = 0 }: { match: Match; index?: number })
                 </span>
               </div>
             ) : isFinished ? (
-              <div className="flex items-center gap-2 font-black text-base tabular-nums text-muted-foreground">
-                <span>{match.homeScore}</span>
-                <span className="text-muted-foreground/40 text-sm">-</span>
-                <span>{match.awayScore}</span>
+              <div className="flex flex-col items-center gap-0.5">
+                <div className="flex items-center gap-2 font-black text-base tabular-nums text-muted-foreground">
+                  <span>{match.homeScore}</span>
+                  <span className="text-muted-foreground/40 text-sm">-</span>
+                  <span>{match.awayScore}</span>
+                </div>
+                {showDate && (
+                  <span className="text-[10px] text-muted-foreground/50 tabular-nums">
+                    {format(new Date(match.kickoffAt), "d MMM")}
+                  </span>
+                )}
               </div>
             ) : (
-              <span className="text-sm font-bold text-primary tabular-nums">
-                {format(new Date(match.kickoffAt), "HH:mm")}
-              </span>
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="text-sm font-bold text-primary tabular-nums">
+                  {format(new Date(match.kickoffAt), "HH:mm")}
+                </span>
+                {showDate && (
+                  <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+                    {format(new Date(match.kickoffAt), "d MMM")}
+                  </span>
+                )}
+              </div>
             )}
           </div>
 
