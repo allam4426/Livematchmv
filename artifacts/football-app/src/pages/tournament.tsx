@@ -368,9 +368,18 @@ export default function TournamentPage() {
   const participatingTeams = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
   /* ── bracket matches (for group_stage: only knockout rounds) ── */
+  const allMatchItems = (matches ?? []) as MatchItem[];
   const bracketMatches = isGroupStage
-    ? ((matches ?? []) as MatchItem[]).filter(m => m.matchGroup && roundOrder(m.matchGroup) !== 999)
-    : (matches ?? []) as MatchItem[];
+    ? allMatchItems.filter(m => m.matchGroup && roundOrder(m.matchGroup) !== 999)
+    : allMatchItems;
+
+  /* ── hide standings once knockout phase starts and all group matches are done ── */
+  const groupMatches = isGroupStage
+    ? allMatchItems.filter(m => !m.matchGroup || roundOrder(m.matchGroup) === 999)
+    : [];
+  const knockoutPhaseActive = isGroupStage && bracketMatches.length > 0 &&
+    groupMatches.length > 0 && groupMatches.every(m => m.status === "finished");
+  const hideStandings = isKnockout(fmt) || knockoutPhaseActive;
 
   /* ── group matches for the Matches tab ── */
   const groupedMatches: Record<string, typeof matches> = {};
@@ -408,7 +417,7 @@ export default function TournamentPage() {
     ...(isGroupStageOrKnockout(fmt)
       ? [{ id: "bracket" as Tab, label: "Bracket", icon: <GitBranch className="w-3.5 h-3.5" /> }]
       : []),
-    ...(!isKnockout(fmt)
+    ...(!hideStandings
       ? [{ id: "standings" as Tab, label: "Standings", icon: <Trophy className="w-3.5 h-3.5" /> }]
       : []),
     { id: "stats", label: "Stats", icon: <BarChart2 className="w-3.5 h-3.5" /> },
