@@ -12,6 +12,7 @@ import { ChevronLeft, Play } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { PenaltyIcon } from "@/components/penalty-icon";
+import { SubstitutionIcon } from "@/components/substitution-icon";
 
 /* ─── helpers ─── */
 
@@ -100,7 +101,7 @@ function EventIcon({ type }: { type: string }) {
   return (
     <div className="w-11 h-11 rounded-2xl bg-[#141e2e] flex items-center justify-center text-[18px] shrink-0 z-10 border border-white/5 overflow-hidden">
       {type === "substitution"
-        ? <img src="/sub-icon.jpeg" alt="Sub" className="w-full h-full object-cover" />
+        ? <SubstitutionIcon />
         : type === "penalty_goal"
         ? <PenaltyIcon outcome="goal" />
         : type === "penalty_missed"

@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, ChevronUp, Trash2, RotateCcw, X, Pencil, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PenaltyTileIcon } from "@/components/penalty-icon";
+import { SubstitutionIcon } from "@/components/substitution-icon";
 
 /* ─── types ─── */
 type EventType =
@@ -782,7 +783,7 @@ export function EventsTab() {
                     tile.bg
                   )}>
                   {tile.icon === "__sub__"
-                    ? <img src="/sub-icon.jpeg" alt="Sub" className="w-8 h-8 rounded-lg object-cover" />
+                    ? <SubstitutionIcon className="scale-150" />
                     : tile.icon === "__pen_goal__"
                     ? <PenaltyTileIcon outcome="goal" />
                     : tile.icon === "__pen_missed__"
