@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
-import { Home as HomeIcon, Gamepad2, Play, LayoutGrid, Sun, Moon, Trophy, Users } from "lucide-react";
+import { Home as HomeIcon, Gamepad2, Play, LayoutGrid, Sun, Moon, Trophy, Users, Lock } from "lucide-react";
 import { useAdminMe } from "@workspace/api-client-react";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -52,6 +52,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </span>
                 </Link>
               ))}
+              {!isAdmin && (
+                <Link href="/admin">
+                  <span className={cn(
+                    "flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary cursor-pointer",
+                    location === "/admin" ? "text-primary" : "text-muted-foreground/50"
+                  )}>
+                    <Lock className="w-3.5 h-3.5" />
+                  </span>
+                </Link>
+              )}
             </nav>
             <button
               onClick={toggle}
