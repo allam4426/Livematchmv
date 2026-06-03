@@ -118,7 +118,6 @@ function LoginPage() {
         </form>
 
         {mode === "superadmin" && (
-          <p className="text-center text-xs text-muted-foreground mt-6">Default password: <code className="text-primary">admin2024</code></p>
         )}
       </div>
     </div>
