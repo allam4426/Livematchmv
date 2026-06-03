@@ -1843,9 +1843,28 @@ components:
         assists:
           type: integer
 
+    TournamentPlayerStat:
+      type: object
+      required: [playerName, teamId, teamName, count]
+      properties:
+        playerName:
+          type: string
+        playerNumber:
+          type: ["string", "null"]
+        teamId:
+          type: integer
+        teamName:
+          type: string
+        teamShortName:
+          type: ["string", "null"]
+        teamLogoUrl:
+          type: ["string", "null"]
+        count:
+          type: integer
+
     TournamentTopScorers:
       type: object
-      required: [topScorers, mvp]
+      required: [topScorers, mvp, yellowCards, redCards, ownGoals]
       properties:
         topScorers:
           type: array
@@ -1855,3 +1874,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TopScorer"
+        yellowCards:
+          type: array
+          items:
+            $ref: "#/components/schemas/TournamentPlayerStat"
+        redCards:
+          type: array
+          items:
+            $ref: "#/components/schemas/TournamentPlayerStat"
+        ownGoals:
+          type: array
+          items:
+            $ref: "#/components/schemas/TournamentPlayerStat"

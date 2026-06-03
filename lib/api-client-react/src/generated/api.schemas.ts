@@ -689,9 +689,25 @@ export interface TopScorer {
   assists: number;
 }
 
+export interface TournamentPlayerStat {
+  playerName: string;
+  /** @nullable */
+  playerNumber?: string | null;
+  teamId: number;
+  teamName: string;
+  /** @nullable */
+  teamShortName?: string | null;
+  /** @nullable */
+  teamLogoUrl?: string | null;
+  count: number;
+}
+
 export interface TournamentTopScorers {
   topScorers: TopScorer[];
   mvp: TopScorer[];
+  yellowCards: TournamentPlayerStat[];
+  redCards: TournamentPlayerStat[];
+  ownGoals: TournamentPlayerStat[];
 }
 
 export type ListBannersParams = {

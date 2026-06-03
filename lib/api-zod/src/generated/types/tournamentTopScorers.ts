@@ -6,8 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { TopScorer } from './topScorer';
+import type { TournamentPlayerStat } from './tournamentPlayerStat';
 
 export interface TournamentTopScorers {
   topScorers: TopScorer[];
   mvp: TopScorer[];
+  yellowCards: TournamentPlayerStat[];
+  redCards: TournamentPlayerStat[];
+  ownGoals: TournamentPlayerStat[];
 }

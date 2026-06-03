@@ -606,6 +606,33 @@ export const GetTournamentTopScorersResponse = zod.object({
   "teamLogoUrl": zod.string().nullish(),
   "goals": zod.number(),
   "assists": zod.number()
+})),
+  "yellowCards": zod.array(zod.object({
+  "playerName": zod.string(),
+  "playerNumber": zod.string().nullish(),
+  "teamId": zod.number(),
+  "teamName": zod.string(),
+  "teamShortName": zod.string().nullish(),
+  "teamLogoUrl": zod.string().nullish(),
+  "count": zod.number()
+})),
+  "redCards": zod.array(zod.object({
+  "playerName": zod.string(),
+  "playerNumber": zod.string().nullish(),
+  "teamId": zod.number(),
+  "teamName": zod.string(),
+  "teamShortName": zod.string().nullish(),
+  "teamLogoUrl": zod.string().nullish(),
+  "count": zod.number()
+})),
+  "ownGoals": zod.array(zod.object({
+  "playerName": zod.string(),
+  "playerNumber": zod.string().nullish(),
+  "teamId": zod.number(),
+  "teamName": zod.string(),
+  "teamShortName": zod.string().nullish(),
+  "teamLogoUrl": zod.string().nullish(),
+  "count": zod.number()
 }))
 })
 

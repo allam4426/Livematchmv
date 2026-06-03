@@ -79,6 +79,7 @@ export * from './tournamentFormat';
 export * from './tournamentInput';
 export * from './tournamentInputFormat';
 export * from './tournamentInputSport';
+export * from './tournamentPlayerStat';
 export * from './tournamentSport';
 export * from './tournamentStandings';
 export * from './tournamentStandingsFormat';

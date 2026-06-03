@@ -2,15 +2,19 @@ import {
   useGetTournament,
   useGetTournamentStandings,
   useGetTournamentMatches,
+  useGetTournamentTopScorers,
   getGetTournamentQueryKey,
   getGetTournamentStandingsQueryKey,
   getGetTournamentMatchesQueryKey,
+  getGetTournamentTopScorersQueryKey,
+  type TournamentPlayerStat,
+  type TopScorer,
 } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TeamLogo } from "@/components/team-logo";
 import { MatchRow } from "@/components/match-row";
-import { Trophy, ChevronLeft, Calendar, Layers, GitBranch, Users } from "lucide-react";
+import { Trophy, ChevronLeft, Calendar, Layers, GitBranch, Users, BarChart2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -305,7 +309,7 @@ export default function TournamentPage() {
   const isKnockout = (fmt?: string | null) => fmt === "knockout";
   const isGroupStageOrKnockout = (fmt?: string | null) => fmt === "group_stage" || fmt === "knockout";
 
-  type Tab = "matches" | "standings" | "bracket" | "teams";
+  type Tab = "matches" | "standings" | "bracket" | "teams" | "stats";
   const [activeTab, setActiveTab] = useState<Tab>("matches");
 
   const { data: tournament, isLoading: tLoading } = useGetTournament(tournamentId, {
@@ -318,6 +322,12 @@ export default function TournamentPage() {
     query: {
       enabled: !!tournamentId && activeTab === "standings",
       queryKey: getGetTournamentStandingsQueryKey(tournamentId),
+    },
+  });
+  const { data: statsData, isLoading: statsLoading } = useGetTournamentTopScorers(tournamentId, {
+    query: {
+      enabled: !!tournamentId && activeTab === "stats",
+      queryKey: getGetTournamentTopScorersQueryKey(tournamentId),
     },
   });
 
@@ -401,6 +411,7 @@ export default function TournamentPage() {
     ...(!isKnockout(fmt)
       ? [{ id: "standings" as Tab, label: "Standings", icon: <Trophy className="w-3.5 h-3.5" /> }]
       : []),
+    { id: "stats", label: "Stats", icon: <BarChart2 className="w-3.5 h-3.5" /> },
   ];
 
   return (
@@ -631,6 +642,161 @@ export default function TournamentPage() {
           )}
         </div>
       )}
+
+      {/* ── Stats tab ── */}
+      {activeTab === "stats" && (
+        <div className="space-y-4 px-4">
+          {statsLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}
+            </div>
+          ) : !statsData ? null : (
+            <>
+              <StatSection
+                title="⚽ Top Scorers"
+                emptyMsg="No goals logged yet"
+                rows={statsData.topScorers}
+                renderValue={p => (
+                  <div className="flex flex-col items-end">
+                    <span className="text-sm font-black text-emerald-400">{p.goals}</span>
+                    {p.assists > 0 && <span className="text-[10px] text-muted-foreground">{p.assists} ast</span>}
+                  </div>
+                )}
+                colLabel="Goals"
+              />
+              <StatSection
+                title="🟨 Yellow Cards"
+                emptyMsg="No yellow cards logged yet"
+                rows={statsData.yellowCards}
+                renderValue={p => <span className="text-sm font-black text-yellow-400">{p.count}</span>}
+                colLabel="YC"
+              />
+              <StatSection
+                title="🟥 Red Cards"
+                emptyMsg="No red cards logged yet"
+                rows={statsData.redCards}
+                renderValue={p => <span className="text-sm font-black text-red-400">{p.count}</span>}
+                colLabel="RC"
+              />
+              {statsData.ownGoals.length > 0 && (
+                <StatSection
+                  title="🙈 Own Goals"
+                  emptyMsg=""
+                  rows={statsData.ownGoals}
+                  renderValue={p => <span className="text-sm font-black text-muted-foreground">{p.count}</span>}
+                  colLabel="OG"
+                />
+              )}
+              <MvpSection players={statsData.mvp} />
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Stat helpers ─── */
+
+function playerInitials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+const AVATAR_COLORS = [
+  "bg-orange-500", "bg-blue-500", "bg-emerald-500", "bg-purple-500",
+  "bg-rose-500", "bg-amber-500", "bg-cyan-500", "bg-pink-500",
+];
+function avatarColor(name: string) {
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffff;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length]!;
+}
+
+type ScorerRow = TopScorer;
+type StatRow = TournamentPlayerStat;
+
+function PlayerRow<T extends { playerName: string; playerNumber?: string | null; teamName: string; teamLogoUrl?: string | null }>({
+  player, rank, renderValue,
+}: { player: T; rank: number; renderValue: (p: T) => React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 py-2.5 border-b border-border/30 last:border-0">
+      <span className="text-xs text-muted-foreground w-5 text-center shrink-0">{rank}</span>
+      <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[11px] font-black text-white", avatarColor(player.playerName))}>
+        {playerInitials(player.playerName)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold text-foreground truncate">
+          {player.playerNumber ? `#${player.playerNumber} ` : ""}{player.playerName}
+        </p>
+        <p className="text-[10px] text-muted-foreground truncate">{player.teamName}</p>
+      </div>
+      {renderValue(player)}
+    </div>
+  );
+}
+
+function StatSection<T extends ScorerRow | StatRow>({
+  title, rows, renderValue, colLabel, emptyMsg,
+}: {
+  title: string;
+  rows: T[];
+  renderValue: (p: T) => React.ReactNode;
+  colLabel: string;
+  emptyMsg: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const PREVIEW = 5;
+  const visible = expanded ? rows : rows.slice(0, PREVIEW);
+
+  return (
+    <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+        <span className="text-sm font-black text-foreground">{title}</span>
+        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{colLabel}</span>
+      </div>
+      <div className="px-4">
+        {rows.length === 0 ? (
+          <p className="py-6 text-center text-xs text-muted-foreground">{emptyMsg}</p>
+        ) : (
+          <>
+            {visible.map((p, i) => (
+              <PlayerRow key={`${p.playerName}::${'teamId' in p ? p.teamId : i}`} player={p} rank={i + 1} renderValue={renderValue} />
+            ))}
+            {rows.length > PREVIEW && (
+              <button
+                onClick={() => setExpanded(e => !e)}
+                className="w-full py-2.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors"
+              >
+                {expanded ? "Show less" : `View ${rows.length - PREVIEW} more`}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MvpSection({ players }: { players: TopScorer[] }) {
+  if (players.length === 0) return (
+    <div className="bg-card rounded-xl border border-border p-4">
+      <p className="text-sm font-black text-foreground mb-1">🏅 Player of the Match</p>
+      <p className="text-xs text-muted-foreground">No MVP awards logged yet.</p>
+    </div>
+  );
+
+  return (
+    <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <div className="px-4 py-3 border-b border-border">
+        <span className="text-sm font-black text-foreground">🏅 Player of the Match</span>
+      </div>
+      <div className="px-4">
+        {players.map((p, i) => (
+          <PlayerRow key={`${p.playerName}::${p.teamId}`} player={p} rank={i + 1} renderValue={() => null} />
+        ))}
+      </div>
     </div>
   );
 }
