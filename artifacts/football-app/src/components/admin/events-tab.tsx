@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 type EventType =
   | "goal" | "yellow_card" | "red_card" | "second_yellow_red" | "own_goal"
   | "penalty_awarded" | "penalty_goal" | "penalty_missed"
+  | "ten_meter_goal" | "foul"
   | "substitution" | "mvp";
 
 /* ─── stopwatch ─────────────────────────────────────────────────────────────
@@ -119,6 +120,7 @@ type ModalState = {
 const EVENT_ICON_MAP: Record<string, string> = {
   goal: "⚽", yellow_card: "🟨", red_card: "🟥", second_yellow_red: "🟨🟥", own_goal: "↩⚽",
   penalty_awarded: "P!", penalty_goal: "P⚽", penalty_missed: "P✗",
+  ten_meter_goal: "10⚽", foul: "🚫",
   substitution: "↕", mvp: "⭐",
 };
 
@@ -135,7 +137,7 @@ function EventModal({
 }) {
   const isMvp = modal.type === "mvp";
   const isCommentary = modal.type === "penalty_awarded"; // reuse for commentary edge cases
-  const isGoal = modal.type === "goal" || modal.type === "penalty_goal";
+  const isGoal = modal.type === "goal" || modal.type === "penalty_goal" || modal.type === "ten_meter_goal";
   const isSub = modal.type === "substitution";
 
   const [teamSide, setTeamSide] = useState<"home" | "away">("home");
@@ -315,16 +317,18 @@ function ScoreBtn({ onClick, children }: { onClick: () => void; children: React.
 
 /* ─── log icon ─── */
 const LOG_ICONS: Record<string, { icon: string; label: string; color: string }> = {
-  goal:               { icon: "⚽", label: "Goal",            color: "text-emerald-400" },
-  yellow_card:        { icon: "🟨", label: "Yellow",          color: "text-yellow-400" },
-  red_card:           { icon: "🟥", label: "Red Card",        color: "text-red-400" },
-  second_yellow_red:  { icon: "🟨🟥", label: "2nd Yellow+Red", color: "text-orange-400" },
-  own_goal:           { icon: "↩⚽", label: "Own Goal",       color: "text-orange-400" },
-  penalty_awarded:    { icon: "P!", label: "Penalty",         color: "text-blue-400" },
-  penalty_goal:       { icon: "P⚽", label: "Pen. Goal",      color: "text-emerald-400" },
-  penalty_missed:     { icon: "P✗", label: "Pen. Miss",       color: "text-red-400" },
-  substitution:       { icon: "↕", label: "Sub",             color: "text-purple-400" },
-  mvp:                { icon: "⭐", label: "MVP",             color: "text-amber-400" },
+  goal:               { icon: "⚽",   label: "Goal",            color: "text-emerald-400" },
+  yellow_card:        { icon: "🟨",   label: "Yellow",          color: "text-yellow-400" },
+  red_card:           { icon: "🟥",   label: "Red Card",        color: "text-red-400" },
+  second_yellow_red:  { icon: "🟨🟥", label: "2nd Yellow+Red",  color: "text-orange-400" },
+  own_goal:           { icon: "↩⚽",  label: "Own Goal",        color: "text-orange-400" },
+  penalty_awarded:    { icon: "P!",   label: "Penalty",         color: "text-blue-400" },
+  penalty_goal:       { icon: "P⚽",  label: "Pen. Goal",       color: "text-emerald-400" },
+  penalty_missed:     { icon: "P✗",   label: "Pen. Miss",       color: "text-red-400" },
+  ten_meter_goal:     { icon: "10⚽", label: "10m Goal",        color: "text-emerald-400" },
+  foul:               { icon: "🚫",   label: "Foul",            color: "text-orange-300" },
+  substitution:       { icon: "↕",    label: "Sub",             color: "text-purple-400" },
+  mvp:                { icon: "⭐",   label: "MVP",             color: "text-amber-400" },
 };
 
 /* ─── main component ─── */
@@ -534,7 +538,8 @@ export function EventsTab() {
   };
 
   /* event tile config */
-  const EVENT_TILES: { type: EventType; label: string; bg: string; icon: string }[] = [
+  type Tile = { type: EventType; label: string; bg: string; icon: string; futsalOnly?: boolean };
+  const EVENT_TILES: Tile[] = ([
     { type: "goal",               label: "Goal",            bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "⚽" },
     { type: "yellow_card",        label: "Yellow Card",     bg: "bg-[#7a5800] hover:bg-[#8f6600]", icon: "🟨" },
     { type: "red_card",           label: "Red Card",        bg: "bg-[#6b1111] hover:bg-[#801313]", icon: "🟥" },
@@ -543,7 +548,9 @@ export function EventsTab() {
     { type: "own_goal",           label: "Own Goal",        bg: "bg-[#5a2d00] hover:bg-[#6e3700]", icon: "↩⚽" },
     { type: "penalty_goal",       label: "Pen. Goal",       bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "P⚽" },
     { type: "penalty_missed",     label: "Pen. Missed",     bg: "bg-[#4a1a1a] hover:bg-[#5a2020]", icon: "P✗" },
-  ];
+    { type: "ten_meter_goal",     label: "10m Goal",        bg: "bg-[#0a4a3a] hover:bg-[#0c5845]", icon: "10⚽", futsalOnly: true },
+    { type: "foul",               label: "Foul",            bg: "bg-[#4a2e00] hover:bg-[#5c3800]", icon: "🚫",  futsalOnly: true },
+  ] as Tile[]).filter(t => !t.futsalOnly || isFutsal);
 
   return (
     <div className="space-y-3">

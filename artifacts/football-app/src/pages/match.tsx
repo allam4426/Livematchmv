@@ -80,16 +80,18 @@ function PhaseSeparator({ label }: { label: string }) {
 }
 
 const EVENT_INFO: Record<string, { emoji: string; label: string }> = {
-  goal:               { emoji: "⚽", label: "Goal" },
-  penalty_goal:       { emoji: "⚽", label: "Pen. Goal" },
-  own_goal:           { emoji: "⚽", label: "Own Goal" },
-  yellow_card:        { emoji: "🟨", label: "Yellow" },
-  red_card:           { emoji: "🟥", label: "Red Card" },
+  goal:               { emoji: "⚽",   label: "Goal" },
+  penalty_goal:       { emoji: "⚽",   label: "Pen. Goal" },
+  own_goal:           { emoji: "⚽",   label: "Own Goal" },
+  ten_meter_goal:     { emoji: "🎯",   label: "10m Goal" },
+  foul:               { emoji: "🚫",   label: "Foul" },
+  yellow_card:        { emoji: "🟨",   label: "Yellow" },
+  red_card:           { emoji: "🟥",   label: "Red Card" },
   second_yellow_red:  { emoji: "🟨🟥", label: "2nd Yellow" },
-  penalty_missed:     { emoji: "❌", label: "Pen. Missed" },
-  penalty_awarded:    { emoji: "📋", label: "Penalty" },
-  substitution:       { emoji: "🔄", label: "Sub" },
-  mvp:                { emoji: "⭐", label: "MVP" },
+  penalty_missed:     { emoji: "❌",   label: "Pen. Missed" },
+  penalty_awarded:    { emoji: "📋",   label: "Penalty" },
+  substitution:       { emoji: "🔄",   label: "Sub" },
+  mvp:                { emoji: "⭐",   label: "MVP" },
 };
 
 function EventIcon({ type }: { type: string }) {
@@ -196,7 +198,7 @@ function SummaryTab({ match }: { match: MatchDetail }) {
   const h1Events     = [...lineEvents.filter(e => phase(e.minute) === "h1")].reverse();
 
   // HT score from H1 goal events
-  const goalTypes = ["goal", "penalty_goal"];
+  const goalTypes = ["goal", "penalty_goal", "ten_meter_goal"];
   const htHome = h1Events.filter(e => goalTypes.includes(e.type) && e.teamId === match.homeTeam.id).length
                + h1Events.filter(e => e.type === "own_goal" && e.teamId === match.awayTeam.id).length;
   const htAway = h1Events.filter(e => goalTypes.includes(e.type) && e.teamId === match.awayTeam.id).length
