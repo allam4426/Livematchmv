@@ -48,15 +48,22 @@ type Tab = "Summary" | "Squad" | "Standings";
 
 /* ─── Summary ─── */
 
-type EventPhase = "pso" | "et" | "h2" | "h1";
+type EventPhase = "pso" | "et2" | "et1" | "h2" | "h1";
 
 function getEventPhase(minute: string, sport?: string | null): EventPhase {
   if (!minute || minute === "PSO") return "pso";
   const base = parseInt(minute.split("+")[0], 10);
   if (isNaN(base)) return "pso";
   const isFutsal = sport === "futsal";
-  if (base > (isFutsal ? 40 : 90)) return "et";
-  if (base > (isFutsal ? 20 : 45)) return "h2";
+  if (isFutsal) {
+    if (base > 40) return "et1"; // futsal ET is one chunk
+    if (base > 20) return "h2";
+    return "h1";
+  }
+  // Football
+  if (base > 105) return "et2";
+  if (base > 90)  return "et1";
+  if (base > 45)  return "h2";
   return "h1";
 }
 
@@ -109,8 +116,9 @@ function EventRow({ event, homeTeamId, isPSO }: { event: SummaryEvent; homeTeamI
   const isHome = event.teamId === homeTeamId;
   const minuteLabel = isPSO ? "PEN" : `${event.minute}'`;
   const info = EVENT_INFO[event.type] ?? { emoji: "•", label: event.type };
-  const subOut = event.type === "substitution" && event.description
-    ? event.description.replace(/^Out:\s*/i, "").split(" · ")[0]
+  const isSub = event.type === "substitution";
+  const subOut = isSub && event.description
+    ? event.description.replace(/^Out:\s*/i, "").split(" · ")[0]?.trim()
     : null;
 
   const icon = <EventIcon type={event.type} />;
@@ -119,16 +127,30 @@ function EventRow({ event, homeTeamId, isPSO }: { event: SummaryEvent; homeTeamI
     <div className={cn("flex flex-col min-w-0 max-w-[130px]", isHome ? "items-end text-right" : "items-start text-left")}>
       <span className="text-[10px] text-muted-foreground/50 tabular-nums leading-none mb-0.5">{minuteLabel}</span>
       <span className="text-sm font-black text-foreground leading-tight">{info.label}</span>
-      {event.playerName && (
-        <span className="text-[11px] text-muted-foreground leading-none mt-0.5 truncate w-full">
-          {event.playerNumber ? `#${event.playerNumber} ` : ""}{event.playerName}
-        </span>
-      )}
-      {event.assistPlayerName && (
-        <span className="text-[10px] text-muted-foreground/50 leading-none truncate w-full">▷ {event.assistPlayerName}</span>
-      )}
-      {subOut && !event.assistPlayerName && (
-        <span className="text-[10px] text-muted-foreground/50 leading-none truncate w-full">↓ {subOut}</span>
+      {isSub ? (
+        <>
+          {event.playerName && (
+            <span className="text-[11px] text-emerald-400 leading-none mt-0.5 truncate w-full font-semibold">
+              ↑ {event.playerNumber ? `#${event.playerNumber} ` : ""}{event.playerName}
+            </span>
+          )}
+          {subOut && (
+            <span className="text-[11px] text-red-400 leading-none mt-0.5 truncate w-full font-semibold">
+              ↓ {subOut}
+            </span>
+          )}
+        </>
+      ) : (
+        <>
+          {event.playerName && (
+            <span className="text-[11px] text-muted-foreground leading-none mt-0.5 truncate w-full">
+              {event.playerNumber ? `#${event.playerNumber} ` : ""}{event.playerName}
+            </span>
+          )}
+          {event.assistPlayerName && (
+            <span className="text-[10px] text-muted-foreground/50 leading-none truncate w-full">▷ {event.assistPlayerName}</span>
+          )}
+        </>
       )}
     </div>
   );
@@ -168,7 +190,8 @@ function SummaryTab({ match }: { match: MatchDetail }) {
   const mvpEvents    = rawEvents.filter(e => e.type === "mvp");
   const lineEvents   = rawEvents.filter(e => e.type !== "mvp");
   const psoEvents    = lineEvents.filter(e => phase(e.minute) === "pso");
-  const etEvents     = [...lineEvents.filter(e => phase(e.minute) === "et")].reverse();
+  const et2Events    = [...lineEvents.filter(e => phase(e.minute) === "et2")].reverse();
+  const et1Events    = [...lineEvents.filter(e => phase(e.minute) === "et1")].reverse();
   const h2Events     = [...lineEvents.filter(e => phase(e.minute) === "h2")].reverse();
   const h1Events     = [...lineEvents.filter(e => phase(e.minute) === "h1")].reverse();
 
@@ -179,6 +202,7 @@ function SummaryTab({ match }: { match: MatchDetail }) {
   const htAway = h1Events.filter(e => goalTypes.includes(e.type) && e.teamId === match.awayTeam.id).length
                + h1Events.filter(e => e.type === "own_goal" && e.teamId === match.homeTeam.id).length;
 
+  // FT score (before PSO)
   const finalHome = match.homeScore ?? 0;
   const finalAway = match.awayScore ?? 0;
   const psoHome = psoEvents.filter(e => e.type === "penalty_goal" && e.teamId === match.homeTeam.id).length;
@@ -186,10 +210,18 @@ function SummaryTab({ match }: { match: MatchDetail }) {
   const ftHome = finalHome - psoHome;
   const ftAway = finalAway - psoAway;
 
+  // ET1 score = goals scored in H1+H2
+  const h1h2GoalsHome = [...h1Events, ...h2Events].filter(e => goalTypes.includes(e.type) && e.teamId === match.homeTeam.id).length
+    + [...h1Events, ...h2Events].filter(e => e.type === "own_goal" && e.teamId === match.awayTeam.id).length;
+  const h1h2GoalsAway = [...h1Events, ...h2Events].filter(e => goalTypes.includes(e.type) && e.teamId === match.awayTeam.id).length
+    + [...h1Events, ...h2Events].filter(e => e.type === "own_goal" && e.teamId === match.homeTeam.id).length;
+
   let kickoffStr = "";
   try { kickoffStr = format(new Date(match.kickoffAt), "HH:mm"); } catch {}
 
-  const hasET = etEvents.length > 0;
+  const hasET1 = et1Events.length > 0;
+  const hasET2 = et2Events.length > 0;
+  const hasET = hasET1 || hasET2;
   const hasPSO = psoEvents.length > 0;
   const isFinished = match.status === "finished";
 
@@ -205,23 +237,40 @@ function SummaryTab({ match }: { match: MatchDetail }) {
             {psoEvents.map(e => (
               <EventRow key={e.id} event={e} homeTeamId={match.homeTeam.id} isPSO />
             ))}
-            {hasET && <PhaseSeparator label={`Extra Time (${ftHome}-${ftAway})`} />}
+            <PhaseSeparator label={`AET (${ftHome}-${ftAway})`} />
           </>
         )}
 
-        {/* ── ET events ── */}
-        {hasET && (
+        {/* ── ET2 events (106-120') ── */}
+        {hasET2 && (
           <>
-            {etEvents.map(e => (
+            {et2Events.map(e => (
               <EventRow key={e.id} event={e} homeTeamId={match.homeTeam.id} />
             ))}
-            <PhaseSeparator label={`FT (${ftHome}-${ftAway})`} />
+            <PhaseSeparator label="ET 2nd Half · 106–120'" />
+          </>
+        )}
+
+        {/* ── ET1 events (91-105') ── */}
+        {hasET1 && (
+          <>
+            {et1Events.map(e => (
+              <EventRow key={e.id} event={e} homeTeamId={match.homeTeam.id} />
+            ))}
+            {hasET ? (
+              <PhaseSeparator label={`ET 1st Half · 91–105' · FT (${h1h2GoalsHome}-${h1h2GoalsAway})`} />
+            ) : null}
           </>
         )}
 
         {/* FT divider when no ET/PSO */}
         {!hasET && !hasPSO && isFinished && (
-          <PhaseSeparator label={`FT (${finalHome}-${finalAway})`} />
+          <PhaseSeparator label={`Full Time (${finalHome}-${finalAway})`} />
+        )}
+
+        {/* FT divider when there IS ET */}
+        {hasET && !hasET2 && (
+          <PhaseSeparator label={`Full Time (${h1h2GoalsHome}-${h1h2GoalsAway})`} />
         )}
 
         {/* ── H2 events ── */}
@@ -231,7 +280,7 @@ function SummaryTab({ match }: { match: MatchDetail }) {
 
         {/* HT divider */}
         {(h1Events.length > 0 || h2Events.length > 0) && (
-          <PhaseSeparator label={`HT (${htHome}-${htAway})`} />
+          <PhaseSeparator label={`Half Time · 45' (${htHome}-${htAway})`} />
         )}
 
         {/* ── H1 events ── */}
@@ -240,7 +289,7 @@ function SummaryTab({ match }: { match: MatchDetail }) {
         ))}
 
         {/* KO */}
-        {kickoffStr && <PhaseSeparator label={`KO - ${kickoffStr}`} />}
+        {kickoffStr && <PhaseSeparator label={`Kick Off · ${kickoffStr}`} />}
       </div>
 
       {/* MVP */}
@@ -257,74 +306,291 @@ function SummaryTab({ match }: { match: MatchDetail }) {
   );
 }
 
-/* ─── Squad ─── */
+/* ─── Squad / Pitch ─── */
+
+type LineupPlayer = {
+  id: number; playerName: string; playerNumber: string | null;
+  position?: string | null; role?: string | null; isStarting?: boolean | null;
+};
+
+function posCategory(pos: string | null | undefined): "GK" | "DEF" | "MID" | "FWD" {
+  if (!pos) return "MID";
+  const p = pos.toLowerCase().replace(/[-_\s]+/g, "");
+  if (p.includes("gk") || p.includes("goalkeeper") || p.includes("keeper")) return "GK";
+  if (p.includes("fwd") || p.includes("att") || p.includes("forward") || p.includes("striker")
+    || p.includes("winger") || p === "st" || p === "cf" || p === "lw" || p === "rw") return "FWD";
+  if (p.includes("def") || p.includes("back") || p === "cb" || p === "lb" || p === "rb" || p === "wb") return "DEF";
+  return "MID";
+}
+
+function distributeByPosition(players: LineupPlayer[]): Record<"GK"|"DEF"|"MID"|"FWD", LineupPlayer[]> {
+  const groups: Record<"GK"|"DEF"|"MID"|"FWD", LineupPlayer[]> = { GK: [], DEF: [], MID: [], FWD: [] };
+  const hasPositions = players.some(p => p.position);
+  if (hasPositions) {
+    for (const p of players) groups[posCategory(p.position)].push(p);
+    // If GK is empty but we have 11 starters, last player is GK
+    if (groups.GK.length === 0 && players.length >= 11) {
+      const last = players[players.length - 1];
+      if (last) { groups.GK.push(last); groups.MID.pop(); }
+    }
+  } else {
+    // Distribute evenly: 1 GK, ~4 DEF, ~4 MID, rest FWD
+    const sorted = [...players];
+    if (sorted.length > 0) groups.GK.push(sorted.shift()!);
+    const rem = sorted.length;
+    const def = Math.min(4, Math.floor(rem * 0.36));
+    const mid = Math.min(4, Math.floor(rem * 0.36));
+    groups.DEF.push(...sorted.splice(0, def));
+    groups.MID.push(...sorted.splice(0, mid));
+    groups.FWD.push(...sorted);
+  }
+  return groups;
+}
+
+function PitchPlayerNode({
+  player, events, teamColor,
+}: {
+  player: LineupPlayer;
+  events: SummaryEvent[];
+  teamColor: string;
+}) {
+  const isCaptain = player.role === "captain";
+  const playerEvents = events.filter(e => e.playerName === player.playerName || e.description?.includes(player.playerName));
+  const hasYellow = playerEvents.some(e => e.type === "yellow_card" || e.type === "second_yellow_red");
+  const hasRed = playerEvents.some(e => e.type === "red_card" || e.type === "second_yellow_red");
+  const subbedOff = events.some(e => e.type === "substitution" && e.description?.includes(player.playerName));
+  const subbedOn  = events.some(e => e.type === "substitution" && e.playerName === player.playerName);
+
+  return (
+    <div className="flex flex-col items-center gap-0.5 w-12">
+      <div className="relative">
+        {/* Player circle */}
+        <div className={cn(
+          "w-9 h-9 rounded-full border-2 border-white/30 flex items-center justify-center text-[11px] font-black text-white",
+          teamColor
+        )}>
+          {player.playerNumber || "?"}
+        </div>
+        {/* Captain badge */}
+        {isCaptain && (
+          <span className="absolute -top-1 -left-1 w-3.5 h-3.5 rounded-full bg-amber-400 border border-background flex items-center justify-center text-[7px] font-black text-black">C</span>
+        )}
+        {/* Card indicator */}
+        {hasRed ? (
+          <span className="absolute -top-1 -right-1 w-2.5 h-3 rounded-[2px] bg-red-500 border border-background" />
+        ) : hasYellow ? (
+          <span className="absolute -top-1 -right-1 w-2.5 h-3 rounded-[2px] bg-yellow-400 border border-background" />
+        ) : null}
+        {/* Sub arrow */}
+        {subbedOff && !subbedOn && (
+          <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 border border-background flex items-center justify-center text-[8px] text-white font-black">↓</span>
+        )}
+        {subbedOn && (
+          <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border border-background flex items-center justify-center text-[8px] text-white font-black">↑</span>
+        )}
+      </div>
+      <span className="text-[9px] text-white/90 font-semibold text-center leading-tight line-clamp-1 w-full text-center px-0.5">
+        {player.playerName.split(" ").slice(-1)[0]}
+      </span>
+    </div>
+  );
+}
+
+function PitchRow({ players, events, teamColor, justify = "center" }: {
+  players: LineupPlayer[]; events: SummaryEvent[]; teamColor: string; justify?: string;
+}) {
+  if (players.length === 0) return null;
+  return (
+    <div className={cn("flex items-center w-full px-2", `justify-${justify}`, "gap-1")}>
+      {players.map(p => (
+        <PitchPlayerNode key={p.id} player={p} events={events} teamColor={teamColor} />
+      ))}
+    </div>
+  );
+}
+
+function FootballPitch({
+  homeStarters, awayStarters, homeTeam, awayTeam, events,
+}: {
+  homeStarters: LineupPlayer[];
+  awayStarters: LineupPlayer[];
+  homeTeam: MatchDetail["homeTeam"];
+  awayTeam: MatchDetail["awayTeam"];
+  events: SummaryEvent[];
+}) {
+  const homeGroups = distributeByPosition(homeStarters);
+  const awayGroups = distributeByPosition(awayStarters);
+  const homeColor = "bg-[#1a56a4]";
+  const awayColor = "bg-[#a41a1a]";
+
+  return (
+    <div
+      className="rounded-xl overflow-hidden border border-white/10 mx-0"
+      style={{ background: "linear-gradient(180deg, #1a4731 0%, #1e5c3c 48%, #1e5c3c 52%, #1a4731 100%)" }}
+    >
+      {/* Home team label */}
+      <div className="flex items-center gap-2 px-3 pt-2.5 pb-1">
+        <TeamLogo url={homeTeam.logoUrl} name={homeTeam.name} shortName={homeTeam.shortName} className="w-5 h-5" />
+        <span className="text-xs font-bold text-white/90">{homeTeam.name}</span>
+      </div>
+
+      {/* Home attack → def (top half) */}
+      <div className="flex flex-col gap-3 py-2">
+        <PitchRow players={homeGroups.FWD} events={events} teamColor={homeColor} />
+        <PitchRow players={homeGroups.MID} events={events} teamColor={homeColor} />
+        <PitchRow players={homeGroups.DEF} events={events} teamColor={homeColor} />
+        <PitchRow players={homeGroups.GK}  events={events} teamColor={homeColor} />
+      </div>
+
+      {/* Center line */}
+      <div className="relative flex items-center justify-center my-1">
+        <div className="w-full h-px bg-white/25" />
+        <div className="absolute w-8 h-8 rounded-full border border-white/25" style={{ background: "transparent" }} />
+      </div>
+
+      {/* Away def → attack (bottom half) */}
+      <div className="flex flex-col gap-3 py-2">
+        <PitchRow players={awayGroups.GK}  events={events} teamColor={awayColor} />
+        <PitchRow players={awayGroups.DEF} events={events} teamColor={awayColor} />
+        <PitchRow players={awayGroups.MID} events={events} teamColor={awayColor} />
+        <PitchRow players={awayGroups.FWD} events={events} teamColor={awayColor} />
+      </div>
+
+      {/* Away team label */}
+      <div className="flex items-center justify-end gap-2 px-3 pb-2.5 pt-1">
+        <span className="text-xs font-bold text-white/90">{awayTeam.name}</span>
+        <TeamLogo url={awayTeam.logoUrl} name={awayTeam.name} shortName={awayTeam.shortName} className="w-5 h-5" />
+      </div>
+    </div>
+  );
+}
+
+function SubstitutesList({
+  homeTeam, awayTeam, homeSubs, awaySubs, events,
+}: {
+  homeTeam: MatchDetail["homeTeam"];
+  awayTeam: MatchDetail["awayTeam"];
+  homeSubs: LineupPlayer[];
+  awaySubs: LineupPlayer[];
+  events: SummaryEvent[];
+}) {
+  if (homeSubs.length === 0 && awaySubs.length === 0) return null;
+  const maxRows = Math.max(homeSubs.length, awaySubs.length);
+
+  return (
+    <div className="bg-card rounded-xl border border-border overflow-hidden">
+      {/* Header */}
+      <div className="grid grid-cols-2 border-b border-border">
+        <div className="flex items-center gap-2 px-3 py-2.5 border-r border-border">
+          <TeamLogo url={homeTeam.logoUrl} name={homeTeam.name} shortName={homeTeam.shortName} className="w-5 h-5" />
+          <span className="text-[11px] font-bold text-foreground truncate">{homeTeam.shortName || homeTeam.name}</span>
+        </div>
+        <div className="flex items-center justify-end gap-2 px-3 py-2.5">
+          <span className="text-[11px] font-bold text-foreground truncate">{awayTeam.shortName || awayTeam.name}</span>
+          <TeamLogo url={awayTeam.logoUrl} name={awayTeam.name} shortName={awayTeam.shortName} className="w-5 h-5" />
+        </div>
+      </div>
+
+      {/* Section label */}
+      <div className="px-3 py-1.5 bg-muted/10 border-b border-border/50">
+        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-wider">Substitutes</span>
+      </div>
+
+      {/* Rows */}
+      {Array.from({ length: maxRows }).map((_, i) => {
+        const hp = homeSubs[i];
+        const ap = awaySubs[i];
+        const subbedOnHome = hp && events.some(e => e.type === "substitution" && e.playerName === hp.playerName);
+        const subbedOnAway = ap && events.some(e => e.type === "substitution" && e.playerName === ap.playerName);
+        return (
+          <div key={i} className={cn("grid grid-cols-2", i > 0 && "border-t border-border/30")}>
+            {/* Home sub */}
+            <div className="flex items-center gap-2 px-3 py-2.5 border-r border-border/30">
+              {hp ? (
+                <>
+                  <div className="relative shrink-0">
+                    <span className="w-7 h-7 rounded-full bg-muted border border-border flex items-center justify-center text-[10px] font-black text-foreground">
+                      {hp.playerNumber || "?"}
+                    </span>
+                    {subbedOnHome && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 flex items-center justify-center text-[7px] text-white font-black">↑</span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold text-foreground leading-tight truncate">{hp.playerName}</p>
+                    {hp.position && <p className="text-[9px] text-muted-foreground">{hp.position}</p>}
+                  </div>
+                </>
+              ) : null}
+            </div>
+            {/* Away sub */}
+            <div className="flex items-center justify-end gap-2 px-3 py-2.5">
+              {ap ? (
+                <>
+                  <div className="min-w-0 text-right">
+                    <p className="text-[11px] font-semibold text-foreground leading-tight truncate">{ap.playerName}</p>
+                    {ap.position && <p className="text-[9px] text-muted-foreground">{ap.position}</p>}
+                  </div>
+                  <div className="relative shrink-0">
+                    <span className="w-7 h-7 rounded-full bg-muted border border-border flex items-center justify-center text-[10px] font-black text-foreground">
+                      {ap.playerNumber || "?"}
+                    </span>
+                    {subbedOnAway && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 flex items-center justify-center text-[7px] text-white font-black">↑</span>
+                    )}
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function SquadTab({ matchId, match }: { matchId: number; match: MatchDetail }) {
   const { data: lineup, isLoading } = useGetMatchLineup(matchId, {
     query: { enabled: !!matchId, queryKey: getGetMatchLineupQueryKey(matchId) },
   });
 
-  if (isLoading) return <div className="py-6 space-y-2"><Skeleton className="h-8 w-full" /><Skeleton className="h-8 w-full" /></div>;
+  const events = (match.events ?? []) as SummaryEvent[];
+
+  if (isLoading) return (
+    <div className="space-y-3">
+      <Skeleton className="h-96 w-full rounded-xl" />
+      <Skeleton className="h-48 w-full rounded-xl" />
+    </div>
+  );
   if (!lineup || (!lineup.home?.length && !lineup.away?.length)) {
     return <div className="py-10 text-center text-muted-foreground text-sm">No lineup set for this match.</div>;
   }
 
+  const homePlayers = (lineup.home ?? []) as LineupPlayer[];
+  const awayPlayers = (lineup.away ?? []) as LineupPlayer[];
+  const homeStarters = homePlayers.filter(p => p.isStarting !== false);
+  const awayStarters = awayPlayers.filter(p => p.isStarting !== false);
+  const homeSubs = homePlayers.filter(p => p.isStarting === false);
+  const awaySubs = awayPlayers.filter(p => p.isStarting === false);
+
   return (
-    <div className="space-y-4">
-      {(["home", "away"] as const).map(side => {
-        const team = side === "home" ? match?.homeTeam : match?.awayTeam;
-        const players = side === "home" ? lineup.home : lineup.away;
-        if (!players?.length) return null;
-        const starters = players.filter(p => p.isStarting !== false);
-        const subs = players.filter(p => p.isStarting === false);
-        return (
-          <div key={side} className="bg-card rounded-xl border border-border overflow-hidden">
-            {/* Team header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-muted/30">
-              <TeamLogo url={team?.logoUrl ?? null} name={team?.name ?? ""} shortName={team?.shortName ?? null} className="w-8 h-8" />
-              <span className="text-sm font-bold text-foreground">{team?.name}</span>
-              <span className="ml-auto text-xs text-muted-foreground">{players.length} players</span>
-            </div>
-            {/* Starters */}
-            {starters.length > 0 && (
-              <>
-                <div className="px-4 py-1.5 bg-muted/10 border-b border-border/50">
-                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Starting XI</span>
-                </div>
-                {starters.map((p, i) => (
-                  <div key={p.id} className={cn("flex items-center gap-3 px-4 py-2.5", i > 0 && "border-t border-border/40")}>
-                    <span className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-xs font-black text-primary shrink-0">
-                      {p.playerNumber || "—"}
-                    </span>
-                    <span className="text-sm text-foreground font-medium flex-1">{p.playerName}</span>
-                    {p.position && (
-                      <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded">{p.position}</span>
-                    )}
-                  </div>
-                ))}
-              </>
-            )}
-            {/* Substitutes */}
-            {subs.length > 0 && (
-              <>
-                <div className="px-4 py-1.5 bg-muted/10 border-t border-border border-b border-border/50">
-                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Substitutes</span>
-                </div>
-                {subs.map((p, i) => (
-                  <div key={p.id} className={cn("flex items-center gap-3 px-4 py-2.5 opacity-70", i > 0 && "border-t border-border/40")}>
-                    <span className="w-7 h-7 rounded-full bg-muted border border-border flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
-                      {p.playerNumber || "—"}
-                    </span>
-                    <span className="text-sm text-foreground font-medium flex-1">{p.playerName}</span>
-                    {p.position && (
-                      <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded">{p.position}</span>
-                    )}
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-        );
-      })}
+    <div className="space-y-3">
+      {(homeStarters.length > 0 || awayStarters.length > 0) && (
+        <FootballPitch
+          homeStarters={homeStarters}
+          awayStarters={awayStarters}
+          homeTeam={match.homeTeam}
+          awayTeam={match.awayTeam}
+          events={events}
+        />
+      )}
+      <SubstitutesList
+        homeTeam={match.homeTeam}
+        awayTeam={match.awayTeam}
+        homeSubs={homeSubs}
+        awaySubs={awaySubs}
+        events={events}
+      />
     </div>
   );
 }
