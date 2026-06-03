@@ -11,9 +11,10 @@ import { LineupTab } from "@/components/admin/lineup-tab";
 import { StreamsTab } from "@/components/admin/streams-tab";
 import { PlayersTab } from "@/components/admin/players-tab";
 import { BannersTab } from "@/components/admin/banners-tab";
+import { SpotlightsTab } from "@/components/admin/spotlights-tab";
 import { Activity, Calendar, CheckCircle2, Users, Trophy, LayoutGrid, LogOut, Lock, Image } from "lucide-react";
 
-const TABS = ["Overview", "Teams", "Players", "Tournaments", "Matches", "Live Events", "Lineup", "Streams", "Banners"] as const;
+const TABS = ["Overview", "Spotlights", "Teams", "Players", "Tournaments", "Matches", "Live Events", "Lineup", "Streams", "Banners"] as const;
 type Tab = typeof TABS[number];
 
 function LoginPage() {
@@ -129,6 +130,7 @@ export default function AdminDashboard() {
 
   const tabContent: Record<Tab, React.ReactNode> = {
     "Overview": <OverviewTab />,
+    "Spotlights": <SpotlightsTab />,
     "Teams": <TeamsTab />,
     "Players": <PlayersTab />,
     "Tournaments": <TournamentsTab />,
