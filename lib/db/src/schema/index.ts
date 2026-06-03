@@ -8,3 +8,4 @@ export * from "./lineups";
 export * from "./squads";
 export * from "./banners";
 export * from "./admin_users";
+export * from "./spotlights";

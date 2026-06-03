@@ -32,6 +32,75 @@ tags:
     description: Admin auth operations
 
 paths:
+  /spotlights:
+    get:
+      operationId: listSpotlights
+      tags: [spotlights]
+      summary: List all spotlights
+      responses:
+        "200":
+          description: List of spotlights
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Spotlight"
+    post:
+      operationId: createSpotlight
+      tags: [spotlights]
+      summary: Create a spotlight
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpotlightInput"
+      responses:
+        "201":
+          description: Created spotlight
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Spotlight"
+  /spotlights/{id}:
+    patch:
+      operationId: updateSpotlight
+      tags: [spotlights]
+      summary: Update a spotlight
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpotlightInput"
+      responses:
+        "200":
+          description: Updated spotlight
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Spotlight"
+    delete:
+      operationId: deleteSpotlight
+      tags: [spotlights]
+      summary: Delete a spotlight
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /banners:
     get:
       operationId: listBanners
@@ -1796,6 +1865,43 @@ components:
         homeScore:
           type: integer
         awayScore:
+          type: integer
+
+    Spotlight:
+      type: object
+      required: [id, title, imageUrl, active, sortOrder, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        subtitle:
+          type: ["string", "null"]
+        imageUrl:
+          type: string
+        linkUrl:
+          type: ["string", "null"]
+        active:
+          type: boolean
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+
+    SpotlightInput:
+      type: object
+      properties:
+        title:
+          type: string
+        subtitle:
+          type: string
+        imageUrl:
+          type: string
+        linkUrl:
+          type: string
+        active:
+          type: boolean
+        sortOrder:
           type: integer
 
     Banner:

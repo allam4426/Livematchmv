@@ -57,6 +57,8 @@ export * from './playerListItem';
 export * from './playerStats';
 export * from './playerStatsPlayedTeamsItem';
 export * from './playerStatsTeam';
+export * from './spotlight';
+export * from './spotlightInput';
 export * from './squadPlayer';
 export * from './squadPlayerInput';
 export * from './squadPlayerInputRole';

@@ -635,6 +635,28 @@ export interface HighlightInput {
   awayScore: number;
 }
 
+export interface Spotlight {
+  id: number;
+  title: string;
+  /** @nullable */
+  subtitle?: string | null;
+  imageUrl: string;
+  /** @nullable */
+  linkUrl?: string | null;
+  active: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface SpotlightInput {
+  title?: string;
+  subtitle?: string;
+  imageUrl?: string;
+  linkUrl?: string;
+  active?: boolean;
+  sortOrder?: number;
+}
+
 export type BannerPosition = typeof BannerPosition[keyof typeof BannerPosition];
 
 

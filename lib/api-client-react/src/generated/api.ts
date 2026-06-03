@@ -51,6 +51,8 @@ import type {
   MatchUpdate,
   PlayerListItem,
   PlayerStats,
+  Spotlight,
+  SpotlightInput,
   SquadPlayer,
   SquadPlayerInput,
   StatsSummary,
@@ -79,6 +81,296 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
+
+export const getListSpotlightsUrl = () => {
+
+
+
+
+  return `/api/spotlights`
+}
+
+/**
+ * @summary List all spotlights
+ */
+export const listSpotlights = async ( options?: RequestInit): Promise<Spotlight[]> => {
+
+  return customFetch<Spotlight[]>(getListSpotlightsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSpotlightsQueryKey = () => {
+    return [
+    `/api/spotlights`
+    ] as const;
+    }
+
+
+export const getListSpotlightsQueryOptions = <TData = Awaited<ReturnType<typeof listSpotlights>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSpotlights>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSpotlightsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSpotlights>>> = ({ signal }) => listSpotlights({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSpotlights>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSpotlightsQueryResult = NonNullable<Awaited<ReturnType<typeof listSpotlights>>>
+export type ListSpotlightsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all spotlights
+ */
+
+export function useListSpotlights<TData = Awaited<ReturnType<typeof listSpotlights>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSpotlights>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSpotlightsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateSpotlightUrl = () => {
+
+
+
+
+  return `/api/spotlights`
+}
+
+/**
+ * @summary Create a spotlight
+ */
+export const createSpotlight = async (spotlightInput: SpotlightInput, options?: RequestInit): Promise<Spotlight> => {
+
+  return customFetch<Spotlight>(getCreateSpotlightUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      spotlightInput,)
+  }
+);}
+
+
+
+
+export const getCreateSpotlightMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSpotlight>>, TError,{data: BodyType<SpotlightInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSpotlight>>, TError,{data: BodyType<SpotlightInput>}, TContext> => {
+
+const mutationKey = ['createSpotlight'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSpotlight>>, {data: BodyType<SpotlightInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSpotlight(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSpotlightMutationResult = NonNullable<Awaited<ReturnType<typeof createSpotlight>>>
+    export type CreateSpotlightMutationBody = BodyType<SpotlightInput>
+    export type CreateSpotlightMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a spotlight
+ */
+export const useCreateSpotlight = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSpotlight>>, TError,{data: BodyType<SpotlightInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSpotlight>>,
+        TError,
+        {data: BodyType<SpotlightInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSpotlightMutationOptions(options));
+    }
+
+export const getUpdateSpotlightUrl = (id: number,) => {
+
+
+
+
+  return `/api/spotlights/${id}`
+}
+
+/**
+ * @summary Update a spotlight
+ */
+export const updateSpotlight = async (id: number,
+    spotlightInput: SpotlightInput, options?: RequestInit): Promise<Spotlight> => {
+
+  return customFetch<Spotlight>(getUpdateSpotlightUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      spotlightInput,)
+  }
+);}
+
+
+
+
+export const getUpdateSpotlightMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSpotlight>>, TError,{id: number;data: BodyType<SpotlightInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSpotlight>>, TError,{id: number;data: BodyType<SpotlightInput>}, TContext> => {
+
+const mutationKey = ['updateSpotlight'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSpotlight>>, {id: number;data: BodyType<SpotlightInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateSpotlight(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSpotlightMutationResult = NonNullable<Awaited<ReturnType<typeof updateSpotlight>>>
+    export type UpdateSpotlightMutationBody = BodyType<SpotlightInput>
+    export type UpdateSpotlightMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a spotlight
+ */
+export const useUpdateSpotlight = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSpotlight>>, TError,{id: number;data: BodyType<SpotlightInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSpotlight>>,
+        TError,
+        {id: number;data: BodyType<SpotlightInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateSpotlightMutationOptions(options));
+    }
+
+export const getDeleteSpotlightUrl = (id: number,) => {
+
+
+
+
+  return `/api/spotlights/${id}`
+}
+
+/**
+ * @summary Delete a spotlight
+ */
+export const deleteSpotlight = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteSpotlightUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteSpotlightMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSpotlight>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteSpotlight>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteSpotlight'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSpotlight>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteSpotlight(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteSpotlightMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSpotlight>>>
+
+    export type DeleteSpotlightMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a spotlight
+ */
+export const useDeleteSpotlight = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSpotlight>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteSpotlight>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteSpotlightMutationOptions(options));
+    }
 
 export const getListBannersUrl = (params?: ListBannersParams,) => {
   const normalizedParams = new URLSearchParams();

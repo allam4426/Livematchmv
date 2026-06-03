@@ -9,6 +9,71 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary List all spotlights
+ */
+export const ListSpotlightsResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "imageUrl": zod.string(),
+  "linkUrl": zod.string().nullish(),
+  "active": zod.boolean(),
+  "sortOrder": zod.number(),
+  "createdAt": zod.string()
+})
+export const ListSpotlightsResponse = zod.array(ListSpotlightsResponseItem)
+
+
+/**
+ * @summary Create a spotlight
+ */
+export const CreateSpotlightBody = zod.object({
+  "title": zod.string().optional(),
+  "subtitle": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "linkUrl": zod.string().optional(),
+  "active": zod.boolean().optional(),
+  "sortOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Update a spotlight
+ */
+export const UpdateSpotlightParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateSpotlightBody = zod.object({
+  "title": zod.string().optional(),
+  "subtitle": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "linkUrl": zod.string().optional(),
+  "active": zod.boolean().optional(),
+  "sortOrder": zod.number().optional()
+})
+
+export const UpdateSpotlightResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "imageUrl": zod.string(),
+  "linkUrl": zod.string().nullish(),
+  "active": zod.boolean(),
+  "sortOrder": zod.number(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a spotlight
+ */
+export const DeleteSpotlightParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List banners
  */
 export const ListBannersQueryParams = zod.object({

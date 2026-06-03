@@ -12,6 +12,7 @@ import adminAuthRouter from "./admin-auth";
 import adminStaffRouter from "./admin-staff";
 import squadRouter from "./squad";
 import bannersRouter from "./banners";
+import spotlightsRouter from "./spotlights";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(tournamentsRouter);
 router.use(eventsRouter);
 router.use(lineupRouter);
 router.use(bannersRouter);
+router.use(spotlightsRouter);
 
 export default router;

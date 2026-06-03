@@ -1,9 +1,10 @@
-import { useListLiveMatches, useListMatches, useListCompetitions, useListActiveTournaments, type Match } from "@workspace/api-client-react";
+import { useListLiveMatches, useListMatches, useListCompetitions, useListActiveTournaments, useListSpotlights, type Match, type Spotlight } from "@workspace/api-client-react";
 import { MatchCard } from "@/components/match-card";
 import { MatchRow } from "@/components/match-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BannerSlot } from "@/components/banner-slot";
 import { SpotlightCard } from "@/components/spotlight-card";
+import { ImageSpotlightCard } from "@/components/image-spotlight-card";
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   addDays, format, isToday, isSameDay,
@@ -19,39 +20,43 @@ const STRIP_BEFORE = 3;
 const STRIP_AFTER = 10;
 
 /* ─── Spotlight Carousel ─── */
-function SpotlightCarousel({ matches }: { matches: Match[] }) {
+type CarouselItem =
+  | { kind: "match"; data: Match }
+  | { kind: "image"; data: Spotlight };
+
+function SpotlightCarousel({ items }: { items: CarouselItem[] }) {
   const [idx, setIdx] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const next = useCallback(() => setIdx(i => (i + 1) % matches.length), [matches.length]);
+  const next = useCallback(() => setIdx(i => (i + 1) % items.length), [items.length]);
   const go = (i: number) => { setIdx(i); resetTimer(); };
 
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
-    if (matches.length > 1) {
+    if (items.length > 1) {
       timerRef.current = setInterval(next, 5000);
     }
-  }, [matches.length, next]);
+  }, [items.length, next]);
 
   useEffect(() => {
     resetTimer();
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [resetTimer]);
 
-  // Reset index when match list changes
-  useEffect(() => { setIdx(0); }, [matches.length]);
+  useEffect(() => { setIdx(0); }, [items.length]);
 
-  const current = matches[idx] ?? matches[0];
+  const current = items[idx] ?? items[0];
   if (!current) return null;
 
   return (
     <div className="relative">
-      <SpotlightCard key={current.id} match={current} />
-
-      {/* Dot indicators — only shown when multiple spotlights */}
-      {matches.length > 1 && (
+      {current.kind === "image"
+        ? <ImageSpotlightCard key={current.data.id} spotlight={current.data} />
+        : <SpotlightCard key={current.data.id} match={current.data} />
+      }
+      {items.length > 1 && (
         <div className="flex items-center justify-center gap-1.5 mt-2.5">
-          {matches.map((_, i) => (
+          {items.map((_, i) => (
             <button
               key={i}
               onClick={() => go(i)}
@@ -161,6 +166,7 @@ export default function Home() {
 
   const { data: liveMatches, isLoading: liveLoading, refetch: refetchLive } = useListLiveMatches();
   const { data: allMatches, isLoading: matchesLoading, refetch: refetchMatches } = useListMatches({ limit: 500 });
+  const { data: customSpotlights } = useListSpotlights();
 
   // Poll every 30 s so live scores and minutes stay current
   useEffect(() => {
@@ -174,7 +180,13 @@ export default function Home() {
     addDays(selectedDate, i - STRIP_BEFORE)
   );
 
-  // All spotlight matches (featured), sorted: live first then scheduled
+  // Active custom image spotlights (sorted by sortOrder)
+  const activeCustom: CarouselItem[] = (customSpotlights ?? [])
+    .filter(s => s.active)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map(s => ({ kind: "image" as const, data: s }));
+
+  // Featured match spotlights
   const spotlightMatches = [
     ...(allMatches?.filter(m => m.featured) ?? []),
     ...(liveMatches?.filter(m => m.featured && !allMatches?.find(x => x.id === m.id)) ?? []),
@@ -182,13 +194,16 @@ export default function Home() {
     const order: Record<string, number> = { live: 0, scheduled: 1, finished: 2, postponed: 3 };
     return (order[a.status] ?? 9) - (order[b.status] ?? 9);
   });
-
-  // Deduplicate
   const seen = new Set<number>();
-  const spotlights = spotlightMatches.filter(m => { if (seen.has(m.id)) return false; seen.add(m.id); return true; });
+  const matchItems: CarouselItem[] = spotlightMatches
+    .filter(m => { if (seen.has(m.id)) return false; seen.add(m.id); return true; })
+    .map(m => ({ kind: "match" as const, data: m }));
+
+  // Carousel: custom image spotlights first, then featured matches
+  const carouselItems: CarouselItem[] = [...activeCustom, ...matchItems];
 
   // Fallback hero: first live match (if no spotlight set)
-  const featuredLive = spotlights.length === 0 ? (liveMatches?.[0] ?? null) : null;
+  const featuredLive = carouselItems.length === 0 ? (liveMatches?.[0] ?? null) : null;
 
   const filteredMatches = allMatches?.filter(m => {
     const dateMatch = isSameDay(new Date(m.kickoffAt), selectedDate);
@@ -221,8 +236,8 @@ export default function Home() {
       <div className="pt-4 pb-4">
         {(liveLoading || matchesLoading) ? (
           <div className="px-4"><Skeleton className="h-56 w-full rounded-2xl" /></div>
-        ) : spotlights.length > 0 ? (
-          <SpotlightCarousel matches={spotlights} />
+        ) : carouselItems.length > 0 ? (
+          <SpotlightCarousel items={carouselItems} />
         ) : featuredLive ? (
           <div className="px-4"><MatchCard match={featuredLive} /></div>
         ) : (
