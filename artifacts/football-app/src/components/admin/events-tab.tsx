@@ -325,7 +325,7 @@ const LOG_ICONS: Record<string, { icon: string; label: string; color: string }> 
   penalty_awarded:    { icon: "P!",   label: "Penalty",         color: "text-blue-400" },
   penalty_goal:       { icon: "P⚽",  label: "Pen. Goal",       color: "text-emerald-400" },
   penalty_missed:     { icon: "P✗",   label: "Pen. Miss",       color: "text-red-400" },
-  ten_meter_goal:     { icon: "10⚽", label: "10m Goal",        color: "text-emerald-400" },
+  ten_meter_goal:     { icon: "10⚽", label: "10m Pen Goal",    color: "text-emerald-400" },
   foul:               { icon: "🚫",   label: "Foul",            color: "text-orange-300" },
   substitution:       { icon: "↕",    label: "Sub",             color: "text-purple-400" },
   mvp:                { icon: "⭐",   label: "MVP",             color: "text-amber-400" },
@@ -548,7 +548,7 @@ export function EventsTab() {
     { type: "own_goal",           label: "Own Goal",        bg: "bg-[#5a2d00] hover:bg-[#6e3700]", icon: "↩⚽" },
     { type: "penalty_goal",       label: "Pen. Goal",       bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "P⚽" },
     { type: "penalty_missed",     label: "Pen. Missed",     bg: "bg-[#4a1a1a] hover:bg-[#5a2020]", icon: "P✗" },
-    { type: "ten_meter_goal",     label: "10m Goal",        bg: "bg-[#0a4a3a] hover:bg-[#0c5845]", icon: "10⚽", futsalOnly: true },
+    { type: "ten_meter_goal",     label: "10m Pen Goal",    bg: "bg-[#0a4a3a] hover:bg-[#0c5845]", icon: "10⚽", futsalOnly: true },
     { type: "foul",               label: "Foul",            bg: "bg-[#4a2e00] hover:bg-[#5c3800]", icon: "🚫",  futsalOnly: true },
   ] as Tile[]).filter(t => !t.futsalOnly || isFutsal);
 

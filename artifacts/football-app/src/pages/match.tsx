@@ -83,7 +83,7 @@ const EVENT_INFO: Record<string, { emoji: string; label: string }> = {
   goal:               { emoji: "⚽",   label: "Goal" },
   penalty_goal:       { emoji: "⚽",   label: "Pen. Goal" },
   own_goal:           { emoji: "⚽",   label: "Own Goal" },
-  ten_meter_goal:     { emoji: "🎯",   label: "10m Goal" },
+  ten_meter_goal:     { emoji: "🎯",   label: "10m Pen Goal" },
   foul:               { emoji: "🚫",   label: "Foul" },
   yellow_card:        { emoji: "🟨",   label: "Yellow" },
   red_card:           { emoji: "🟥",   label: "Red Card" },
