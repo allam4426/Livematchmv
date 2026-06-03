@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, ChevronUp, Trash2, RotateCcw, X, Pencil, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PenaltyTileIcon } from "@/components/penalty-icon";
 
 /* ─── types ─── */
 type EventType =
@@ -546,8 +547,8 @@ export function EventsTab() {
     { type: "second_yellow_red",  label: "2nd Yellow+Red",  bg: "bg-[#7a3200] hover:bg-[#8f3c00]", icon: "🟨🟥" },
     { type: "substitution",       label: "Substitution",    bg: "bg-[#0d3060] hover:bg-[#104080]", icon: "__sub__" },
     { type: "own_goal",           label: "Own Goal",        bg: "bg-[#5a2d00] hover:bg-[#6e3700]", icon: "↩⚽" },
-    { type: "penalty_goal",       label: "Pen. Goal",       bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "P⚽" },
-    { type: "penalty_missed",     label: "Pen. Missed",     bg: "bg-[#4a1a1a] hover:bg-[#5a2020]", icon: "P✗" },
+    { type: "penalty_goal",       label: "Pen. Goal",       bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "__pen_goal__" },
+    { type: "penalty_missed",     label: "Pen. Missed",     bg: "bg-[#4a1a1a] hover:bg-[#5a2020]", icon: "__pen_missed__" },
     { type: "ten_meter_goal",     label: "10m Pen Goal",    bg: "bg-[#0a4a3a] hover:bg-[#0c5845]", icon: "10⚽", futsalOnly: true },
     { type: "foul",               label: "Foul",            bg: "bg-[#4a2e00] hover:bg-[#5c3800]", icon: "🚫",  futsalOnly: true },
   ] as Tile[]).filter(t => !t.futsalOnly || isFutsal);
@@ -782,6 +783,10 @@ export function EventsTab() {
                   )}>
                   {tile.icon === "__sub__"
                     ? <img src="/sub-icon.jpeg" alt="Sub" className="w-8 h-8 rounded-lg object-cover" />
+                    : tile.icon === "__pen_goal__"
+                    ? <PenaltyTileIcon outcome="goal" />
+                    : tile.icon === "__pen_missed__"
+                    ? <PenaltyTileIcon outcome="missed" />
                     : <span className="text-2xl leading-none">{tile.icon}</span>}
                   <span className="text-xs font-black text-white tracking-wide">{tile.label}</span>
                 </button>
