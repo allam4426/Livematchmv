@@ -280,7 +280,7 @@ function SummaryTab({ match }: { match: MatchDetail }) {
 
         {/* HT divider */}
         {(h1Events.length > 0 || h2Events.length > 0) && (
-          <PhaseSeparator label={`Half Time · 45' (${htHome}-${htAway})`} />
+          <PhaseSeparator label={`Half Time · ${sport === "futsal" ? "20" : "45"}' (${htHome}-${htAway})`} />
         )}
 
         {/* ── H1 events ── */}
