@@ -96,6 +96,23 @@ const EVENT_INFO: Record<string, { emoji: string; label: string }> = {
   mvp:                { emoji: "⭐",   label: "MVP" },
 };
 
+const SHOW_LABEL = new Set(["penalty_goal", "ten_meter_goal", "substitution", "penalty_missed"]);
+
+function YellowCard() {
+  return <div className="w-[18px] h-[25px] rounded-[3px] bg-yellow-400 shadow-md" />;
+}
+function RedCard() {
+  return <div className="w-[18px] h-[25px] rounded-[3px] bg-rose-500 shadow-md" />;
+}
+function SecondYellowRedCard() {
+  return (
+    <div className="relative w-[26px] h-[26px]">
+      <div className="absolute bottom-0 right-0 w-[18px] h-[25px] rounded-[3px] bg-yellow-400 shadow" />
+      <div className="absolute top-0 left-0 w-[18px] h-[25px] rounded-[3px] bg-rose-500 shadow-md" />
+    </div>
+  );
+}
+
 function EventIcon({ type }: { type: string }) {
   const info = EVENT_INFO[type] ?? { emoji: "•", label: type };
   return (
@@ -106,6 +123,12 @@ function EventIcon({ type }: { type: string }) {
         ? <PenaltyIcon outcome="goal" />
         : type === "penalty_missed"
         ? <PenaltyIcon outcome="missed" />
+        : type === "yellow_card"
+        ? <YellowCard />
+        : type === "red_card"
+        ? <RedCard />
+        : type === "second_yellow_red"
+        ? <SecondYellowRedCard />
         : info.emoji}
     </div>
   );
@@ -133,10 +156,12 @@ function EventRow({ event, homeTeamId, isPSO }: { event: SummaryEvent; homeTeamI
 
   const icon = <EventIcon type={event.type} />;
 
+  const showLabel = SHOW_LABEL.has(event.type);
+
   const textBlock = (
     <div className={cn("flex flex-col min-w-0 max-w-[130px]", isHome ? "items-end text-right" : "items-start text-left")}>
       <span className="text-[10px] text-muted-foreground/50 tabular-nums leading-none mb-0.5">{minuteLabel}</span>
-      <span className="text-sm font-black text-foreground leading-tight">{info.label}</span>
+      {showLabel && <span className="text-sm font-black text-foreground leading-tight">{info.label}</span>}
       {isSub ? (
         <>
           {event.playerName && (
