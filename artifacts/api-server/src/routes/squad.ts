@@ -1,6 +1,13 @@
 import { Router } from "express";
-import { db, squadsTable, matchEventsTable, teamsTable } from "@workspace/db";
+import { db, squadsTable, matchEventsTable, teamsTable, lineupsTable } from "@workspace/db";
 import { eq, and, ilike, or } from "drizzle-orm";
+
+async function syncRoleToLineups(teamId: number, playerName: string, role: string) {
+  await db
+    .update(lineupsTable)
+    .set({ role })
+    .where(and(eq(lineupsTable.teamId, teamId), eq(lineupsTable.playerName, playerName)));
+}
 
 const router = Router();
 
@@ -32,6 +39,7 @@ router.post("/teams/:id/squad", async (req, res) => {
     nationality: nationality || null,
     bio: bio || null,
   }).returning();
+  await syncRoleToLineups(teamId, playerName, player.role);
   res.status(201).json(player);
 });
 
@@ -54,6 +62,9 @@ router.patch("/teams/:id/squad/:playerId", async (req, res) => {
     .where(and(eq(squadsTable.id, playerId), eq(squadsTable.teamId, teamId)))
     .returning();
   if (!player) { res.status(404).json({ error: "Not found" }); return; }
+  if (role !== undefined) {
+    await syncRoleToLineups(teamId, player.playerName, player.role);
+  }
   res.json(player);
 });
 
