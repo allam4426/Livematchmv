@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BannerSlot } from "@/components/banner-slot";
 import { SpotlightCard } from "@/components/spotlight-card";
 import { ImageSpotlightCard } from "@/components/image-spotlight-card";
+import { LiveMatchBanner } from "@/components/live-match-banner";
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   addDays, format, isToday, isSameDay,
@@ -231,6 +232,11 @@ export default function Home() {
   return (
     <div className="pb-6">
       <BannerSlot position="top_home" />
+
+      {/* Live match banner — shown at top whenever any match is live */}
+      {liveMatches && liveMatches.length > 0 && (
+        <LiveMatchBanner matches={liveMatches} />
+      )}
 
       {/* Spotlight / Featured hero */}
       <div className="pt-4 pb-4">
