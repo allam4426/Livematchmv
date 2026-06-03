@@ -71,7 +71,7 @@ function normalizeRound(s: string) {
 
 function roundOrder(name: string): number {
   const n = normalizeRound(name);
-  const idx = ROUND_ORDER.indexOf(n);
+  const idx = ROUND_ORDER.findIndex(r => normalizeRound(r) === n);
   return idx === -1 ? 999 : idx;
 }
 
