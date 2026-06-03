@@ -117,8 +117,6 @@ function LoginPage() {
           </button>
         </form>
 
-        {mode === "superadmin" && (
-        )}
       </div>
     </div>
   );
