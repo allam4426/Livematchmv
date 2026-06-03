@@ -573,6 +573,7 @@ export interface LineupPlayer {
   playerName: string;
   /** @nullable */
   position?: string | null;
+  role: string;
   isStarting: boolean;
 }
 
@@ -581,6 +582,7 @@ export interface LineupPlayerInput {
   playerNumber: string;
   playerName: string;
   position?: string;
+  role?: string;
   isStarting?: boolean;
 }
 

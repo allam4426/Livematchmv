@@ -9,7 +9,8 @@ import { Trash2, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const POSITIONS = ["GK", "DEF", "MID", "FWD", "CB", "LB", "RB", "CDM", "CAM", "LW", "RW", "ST", "CF"];
-const EMPTY = { teamSide: "home" as "home" | "away", playerNumber: "", playerName: "", position: "", isStarting: true };
+const ROLES = [{ value: "player", label: "Player" }, { value: "captain", label: "⭐ Captain" }, { value: "coach", label: "🧑‍💼 Coach" }];
+const EMPTY = { teamSide: "home" as "home" | "away", playerNumber: "", playerName: "", position: "", role: "player", isStarting: true };
 
 export function LineupTab() {
   const qc = useQueryClient();
@@ -41,6 +42,7 @@ export function LineupTab() {
         playerNumber: form.playerNumber,
         playerName: form.playerName,
         position: form.position || undefined,
+        role: form.role || undefined,
         isStarting: form.isStarting,
       }
     }, { onSuccess: () => { setForm({ ...EMPTY }); setShowForm(false); invalidate(); } });
@@ -115,7 +117,13 @@ export function LineupTab() {
                     {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
-                <div className="col-span-2 flex items-center gap-2 mt-4">
+                <div className="col-span-2">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Role</label>
+                  <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} className="admin-input">
+                    {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  </select>
+                </div>
+                <div className="col-span-3 flex items-center gap-2">
                   <input type="checkbox" id="isStarting" checked={form.isStarting}
                     onChange={e => setForm(f => ({ ...f, isStarting: e.target.checked }))} className="w-4 h-4 rounded" />
                   <label htmlFor="isStarting" className="text-xs font-semibold text-muted-foreground">Starting XI</label>

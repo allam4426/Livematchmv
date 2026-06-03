@@ -1729,7 +1729,7 @@ components:
 
     LineupPlayer:
       type: object
-      required: [id, matchId, teamId, playerNumber, playerName, isStarting]
+      required: [id, matchId, teamId, playerNumber, playerName, role, isStarting]
       properties:
         id:
           type: integer
@@ -1743,6 +1743,8 @@ components:
           type: string
         position:
           type: ["string", "null"]
+        role:
+          type: string
         isStarting:
           type: boolean
 
@@ -1757,6 +1759,8 @@ components:
         playerName:
           type: string
         position:
+          type: string
+        role:
           type: string
         isStarting:
           type: boolean

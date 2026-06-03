@@ -11,5 +11,6 @@ export interface LineupPlayerInput {
   playerNumber: string;
   playerName: string;
   position?: string;
+  role?: string;
   isStarting?: boolean;
 }

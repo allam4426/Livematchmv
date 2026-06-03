@@ -223,13 +223,13 @@ router.get("/tournaments/:id/standings", async (req, res) => {
     const sortedGroups = Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b));
     const groups: Record<string, ReturnType<typeof computeStandings>> = {};
     for (const [grp, matches] of sortedGroups) {
-      groups[grp] = computeStandings(matches);
+      groups[grp] = computeStandings(matches.filter(m => m.homeTeam && m.awayTeam) as Parameters<typeof computeStandings>[0]);
     }
 
     res.json({ format: "group_stage", groups });
   } else {
     // Single league table
-    const standings = computeStandings(allMatches);
+    const standings = computeStandings(allMatches.filter(m => m.homeTeam && m.awayTeam) as Parameters<typeof computeStandings>[0]);
     res.json({ format, groups: { "League": standings } });
   }
 });

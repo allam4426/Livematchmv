@@ -496,6 +496,7 @@ export const AutoFillLineupResponse = zod.object({
   "playerNumber": zod.string(),
   "playerName": zod.string(),
   "position": zod.string().nullish(),
+  "role": zod.string(),
   "isStarting": zod.boolean()
 })),
   "away": zod.array(zod.object({
@@ -505,6 +506,7 @@ export const AutoFillLineupResponse = zod.object({
   "playerNumber": zod.string(),
   "playerName": zod.string(),
   "position": zod.string().nullish(),
+  "role": zod.string(),
   "isStarting": zod.boolean()
 }))
 })
@@ -1085,6 +1087,7 @@ export const GetMatchLineupResponse = zod.object({
   "playerNumber": zod.string(),
   "playerName": zod.string(),
   "position": zod.string().nullish(),
+  "role": zod.string(),
   "isStarting": zod.boolean()
 })),
   "away": zod.array(zod.object({
@@ -1094,6 +1097,7 @@ export const GetMatchLineupResponse = zod.object({
   "playerNumber": zod.string(),
   "playerName": zod.string(),
   "position": zod.string().nullish(),
+  "role": zod.string(),
   "isStarting": zod.boolean()
 }))
 })
@@ -1111,6 +1115,7 @@ export const AddLineupPlayerBody = zod.object({
   "playerNumber": zod.string(),
   "playerName": zod.string(),
   "position": zod.string().optional(),
+  "role": zod.string().optional(),
   "isStarting": zod.boolean().optional()
 })
 

@@ -14,5 +14,6 @@ export interface LineupPlayer {
   playerName: string;
   /** @nullable */
   position?: string | null;
+  role: string;
   isStarting: boolean;
 }

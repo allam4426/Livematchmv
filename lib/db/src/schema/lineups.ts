@@ -11,6 +11,7 @@ export const lineupsTable = pgTable("lineups", {
   playerNumber: text("player_number").notNull(),
   playerName: text("player_name").notNull(),
   position: text("position"),
+  role: text("role").notNull().default("player"),
   isStarting: boolean("is_starting").notNull().default(true),
 });
 
