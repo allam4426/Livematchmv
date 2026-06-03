@@ -55,6 +55,7 @@ export * from './matchUpdate';
 export * from './matchUpdateStatus';
 export * from './playerListItem';
 export * from './playerStats';
+export * from './playerStatsPlayedTeamsItem';
 export * from './playerStatsTeam';
 export * from './squadPlayer';
 export * from './squadPlayerInput';

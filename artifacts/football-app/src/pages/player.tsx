@@ -1,7 +1,7 @@
 import { useGetSquadPlayerStats } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, User } from "lucide-react";
+import { ChevronLeft, User, Target, Handshake, Shield, AlertTriangle, CircleX, Swords } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function PlayerAvatar({ photoUrl, name }: { photoUrl?: string | null; name: string }) {
@@ -22,15 +22,6 @@ function PlayerAvatar({ photoUrl, name }: { photoUrl?: string | null; name: stri
   return (
     <div className={cn("w-24 h-24 rounded-full flex items-center justify-center text-3xl font-black text-white shadow-2xl border-4 border-white/10", color)}>
       {initials}
-    </div>
-  );
-}
-
-function StatCard({ value, label, color = "text-foreground" }: { value: number; label: string; color?: string }) {
-  return (
-    <div className="bg-card border border-border rounded-2xl p-4 flex flex-col items-center gap-1">
-      <span className={cn("text-3xl font-black tabular-nums", color)}>{value}</span>
-      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-center">{label}</span>
     </div>
   );
 }
@@ -56,6 +47,25 @@ function posBadgeClass(pos?: string | null) {
   return POSITION_BADGE[pos.toUpperCase()] ?? "bg-muted text-muted-foreground border-border";
 }
 
+interface StatCardProps {
+  value: number;
+  label: string;
+  icon: React.ReactNode;
+  color?: string;
+  bg?: string;
+}
+function StatCard({ value, label, icon, color = "text-foreground", bg = "bg-card" }: StatCardProps) {
+  return (
+    <div className={cn("border border-border rounded-2xl p-4 flex flex-col items-center gap-2", bg)}>
+      <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", bg === "bg-card" ? "bg-muted" : "bg-white/10")}>
+        <span className={cn("w-4 h-4", color)}>{icon}</span>
+      </div>
+      <span className={cn("text-2xl font-black tabular-nums leading-none", color)}>{value}</span>
+      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-center leading-tight">{label}</span>
+    </div>
+  );
+}
+
 export default function PlayerProfilePage() {
   const { id } = useParams();
   const playerId = parseInt(id || "0", 10);
@@ -66,10 +76,11 @@ export default function PlayerProfilePage() {
     return (
       <div className="space-y-4 px-4 pt-4 pb-8">
         <Skeleton className="h-8 w-20" />
-        <Skeleton className="h-48 w-full rounded-2xl" />
+        <Skeleton className="h-52 w-full rounded-2xl" />
         <div className="grid grid-cols-3 gap-3">
-          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
         </div>
+        <Skeleton className="h-32 w-full rounded-2xl" />
       </div>
     );
   }
@@ -86,7 +97,7 @@ export default function PlayerProfilePage() {
     );
   }
 
-  const { player, team } = stats;
+  const { player, team, playedTeams } = stats;
   const isCaptain = player.role === "captain";
 
   return (
@@ -133,7 +144,7 @@ export default function PlayerProfilePage() {
               )}
             </div>
 
-            {/* Team */}
+            {/* Current team */}
             {team && (
               <div className="flex items-center gap-2">
                 {team.logoUrl && (
@@ -157,17 +168,85 @@ export default function PlayerProfilePage() {
       </div>
 
       {/* Stats grid */}
-      <div className="px-4 mb-2">
+      <div className="px-4 mb-5">
         <h2 className="text-xs font-black text-muted-foreground uppercase tracking-wider mb-3">Career Stats</h2>
         <div className="grid grid-cols-3 gap-3">
-          <StatCard value={stats.goals} label="Goals" color="text-primary" />
-          <StatCard value={stats.assists} label="Assists" color="text-emerald-400" />
-          <StatCard value={stats.appearances} label="Apps" />
-          <StatCard value={stats.yellowCards} label="Yellow" color="text-yellow-400" />
-          <StatCard value={stats.redCards} label="Red" color="text-red-400" />
-          <StatCard value={stats.ownGoals} label="Own Goals" color="text-muted-foreground" />
+          <StatCard
+            value={stats.goals}
+            label="Goals"
+            icon={<Target className="w-4 h-4" />}
+            color="text-primary"
+          />
+          <StatCard
+            value={stats.assists}
+            label="Assists"
+            icon={<Handshake className="w-4 h-4" />}
+            color="text-emerald-400"
+          />
+          <StatCard
+            value={stats.appearances}
+            label="Appearances"
+            icon={<Swords className="w-4 h-4" />}
+            color="text-sky-400"
+          />
+          <StatCard
+            value={stats.yellowCards}
+            label="Yellow Cards"
+            icon={<AlertTriangle className="w-4 h-4" />}
+            color="text-yellow-400"
+          />
+          <StatCard
+            value={stats.redCards}
+            label="Red Cards"
+            icon={<CircleX className="w-4 h-4" />}
+            color="text-red-400"
+          />
+          <StatCard
+            value={stats.ownGoals}
+            label="Own Goals"
+            icon={<Shield className="w-4 h-4" />}
+            color="text-muted-foreground"
+          />
         </div>
       </div>
+
+      {/* Played Teams */}
+      {playedTeams && playedTeams.length > 0 && (
+        <div className="px-4">
+          <h2 className="text-xs font-black text-muted-foreground uppercase tracking-wider mb-3">
+            Clubs Played For
+          </h2>
+          <div className="space-y-2">
+            {playedTeams.map(t => (
+              <div key={t.id} className="bg-card border border-border rounded-xl flex items-center gap-3 px-4 py-3">
+                {t.logoUrl ? (
+                  <img src={t.logoUrl} alt={t.name} className="w-9 h-9 object-contain rounded-lg shrink-0" />
+                ) : (
+                  <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <Shield className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground truncate">{t.name}</p>
+                  {t.shortName && t.shortName !== t.name && (
+                    <p className="text-[11px] text-muted-foreground">{t.shortName}</p>
+                  )}
+                </div>
+                {t.sport && (
+                  <span className={cn(
+                    "text-[10px] font-bold border rounded-full px-2 py-0.5 shrink-0 capitalize",
+                    t.sport === "football"
+                      ? "bg-green-500/10 text-green-400 border-green-500/20"
+                      : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                  )}>
+                    {t.sport === "football" ? "⚽" : "🥅"} {t.sport}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -377,7 +377,14 @@ export const GetSquadPlayerStatsResponse = zod.object({
   "yellowCards": zod.number(),
   "redCards": zod.number(),
   "ownGoals": zod.number(),
-  "appearances": zod.number()
+  "appearances": zod.number(),
+  "playedTeams": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "sport": zod.string().nullish()
+})).optional()
 })
 
 

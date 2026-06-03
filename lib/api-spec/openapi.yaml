@@ -1892,6 +1892,22 @@ components:
           type: integer
         appearances:
           type: integer
+        playedTeams:
+          type: array
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              shortName:
+                type: ["string", "null"]
+              logoUrl:
+                type: ["string", "null"]
+              sport:
+                type: ["string", "null"]
 
     TopScorer:
       type: object

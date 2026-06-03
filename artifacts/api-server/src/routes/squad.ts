@@ -80,17 +80,11 @@ router.get("/squad/:playerId/stats", async (req, res) => {
 
   const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, player.teamId));
 
-  const events = await db
-    .select()
-    .from(matchEventsTable)
-    .where(eq(matchEventsTable.teamId, player.teamId));
+  // Search ALL match events by player name across all teams
+  const allEvents = await db.select().from(matchEventsTable);
 
-  const playerEvents = events.filter(
-    e => e.playerName === player.playerName
-  );
-  const assistEvents = events.filter(
-    e => e.assistPlayerName === player.playerName
-  );
+  const playerEvents = allEvents.filter(e => e.playerName === player.playerName);
+  const assistEvents = allEvents.filter(e => e.assistPlayerName === player.playerName);
 
   const goals = playerEvents.filter(e => e.type === "goal" || e.type === "penalty_goal").length;
   const ownGoals = playerEvents.filter(e => e.type === "own_goal").length;
@@ -101,6 +95,21 @@ router.get("/squad/:playerId/stats", async (req, res) => {
   const matchIds = new Set(playerEvents.map(e => e.matchId));
   const appearances = matchIds.size;
 
+  // Collect all unique team IDs this player has events for
+  const playedTeamIds = [...new Set(playerEvents.map(e => e.teamId).filter(Boolean) as number[])];
+  let playedTeams: Array<{ id: number; name: string; shortName: string | null; logoUrl: string | null; sport: string | null }> = [];
+  if (playedTeamIds.length > 0) {
+    const teams = await db.select().from(teamsTable);
+    playedTeams = teams
+      .filter(t => playedTeamIds.includes(t.id))
+      .map(t => ({ id: t.id, name: t.name, shortName: t.shortName, logoUrl: t.logoUrl, sport: t.sport }));
+  }
+
+  // Always include the current team if not already in playedTeams
+  if (team && !playedTeams.find(t => t.id === team.id)) {
+    playedTeams.unshift({ id: team.id, name: team.name, shortName: team.shortName, logoUrl: team.logoUrl, sport: team.sport });
+  }
+
   res.json({
     player,
     team: team ? { id: team.id, name: team.name, shortName: team.shortName, logoUrl: team.logoUrl } : null,
@@ -110,6 +119,7 @@ router.get("/squad/:playerId/stats", async (req, res) => {
     redCards,
     ownGoals,
     appearances,
+    playedTeams,
   });
 });
 

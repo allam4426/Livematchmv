@@ -694,6 +694,17 @@ export type PlayerStatsTeam = {
   logoUrl: string | null;
 } | null;
 
+export type PlayerStatsPlayedTeamsItem = {
+  id: number;
+  name: string;
+  /** @nullable */
+  shortName?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  sport?: string | null;
+};
+
 export interface PlayerStats {
   player: SquadPlayer;
   team?: PlayerStatsTeam;
@@ -703,6 +714,7 @@ export interface PlayerStats {
   redCards: number;
   ownGoals: number;
   appearances: number;
+  playedTeams?: PlayerStatsPlayedTeamsItem[];
 }
 
 export interface TopScorer {

@@ -5,6 +5,7 @@
  * FootballLive API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { PlayerStatsPlayedTeamsItem } from './playerStatsPlayedTeamsItem';
 import type { PlayerStatsTeam } from './playerStatsTeam';
 import type { SquadPlayer } from './squadPlayer';
 
@@ -17,4 +18,5 @@ export interface PlayerStats {
   redCards: number;
   ownGoals: number;
   appearances: number;
+  playedTeams?: PlayerStatsPlayedTeamsItem[];
 }
