@@ -544,7 +544,7 @@ export function EventsTab() {
     { type: "yellow_card",        label: "Yellow Card",     bg: "bg-[#7a5800] hover:bg-[#8f6600]", icon: "🟨" },
     { type: "red_card",           label: "Red Card",        bg: "bg-[#6b1111] hover:bg-[#801313]", icon: "🟥" },
     { type: "second_yellow_red",  label: "2nd Yellow+Red",  bg: "bg-[#7a3200] hover:bg-[#8f3c00]", icon: "🟨🟥" },
-    { type: "substitution",       label: "Substitution",    bg: "bg-[#0d3060] hover:bg-[#104080]", icon: "🔄" },
+    { type: "substitution",       label: "Substitution",    bg: "bg-[#0d3060] hover:bg-[#104080]", icon: "__sub__" },
     { type: "own_goal",           label: "Own Goal",        bg: "bg-[#5a2d00] hover:bg-[#6e3700]", icon: "↩⚽" },
     { type: "penalty_goal",       label: "Pen. Goal",       bg: "bg-[#1a4a2e] hover:bg-[#205838]", icon: "P⚽" },
     { type: "penalty_missed",     label: "Pen. Missed",     bg: "bg-[#4a1a1a] hover:bg-[#5a2020]", icon: "P✗" },
@@ -780,7 +780,9 @@ export function EventsTab() {
                     "rounded-2xl py-4 px-3 flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 border border-white/5",
                     tile.bg
                   )}>
-                  <span className="text-2xl leading-none">{tile.icon}</span>
+                  {tile.icon === "__sub__"
+                    ? <img src="/sub-icon.jpeg" alt="Sub" className="w-8 h-8 rounded-lg object-cover" />
+                    : <span className="text-2xl leading-none">{tile.icon}</span>}
                   <span className="text-xs font-black text-white tracking-wide">{tile.label}</span>
                 </button>
               ))}

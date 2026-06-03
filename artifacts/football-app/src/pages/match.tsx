@@ -97,8 +97,10 @@ const EVENT_INFO: Record<string, { emoji: string; label: string }> = {
 function EventIcon({ type }: { type: string }) {
   const info = EVENT_INFO[type] ?? { emoji: "•", label: type };
   return (
-    <div className="w-11 h-11 rounded-2xl bg-[#141e2e] flex items-center justify-center text-[18px] shrink-0 z-10 border border-white/5">
-      {info.emoji}
+    <div className="w-11 h-11 rounded-2xl bg-[#141e2e] flex items-center justify-center text-[18px] shrink-0 z-10 border border-white/5 overflow-hidden">
+      {type === "substitution"
+        ? <img src="/sub-icon.jpeg" alt="Sub" className="w-full h-full object-cover" />
+        : info.emoji}
     </div>
   );
 }
