@@ -162,6 +162,121 @@ function BracketMatchCard({ match }: { match: MatchItem }) {
   );
 }
 
+/* ─── SingleGroupBracket ─── */
+// Special bracket for group_stage tournaments with exactly 1 group:
+// 1st place → BYE → directly to Final
+// 2nd vs 3rd → Semi-Final → Final
+type StandingTeam = { name: string; shortName: string | null; logoUrl: string | null; id: number };
+
+function SingleGroupBracket({
+  bracketMatches,
+  firstPlace,
+}: {
+  bracketMatches: MatchItem[];
+  firstPlace: StandingTeam | undefined;
+}) {
+  const SG_CARD_H = 76;
+  const SG_GAP = 20;
+  const SG_CARD_W = 152;
+  const SG_CONN_W = 36;
+
+  const semiMatch = bracketMatches.find(m =>
+    normalizeRound(m.matchGroup ?? "").includes("semi")
+  );
+  const finalMatch = bracketMatches.find(m =>
+    normalizeRound(m.matchGroup ?? "").includes("final")
+  );
+
+  // Vertical midpoints of each left-column card
+  const byeMidY   = SG_CARD_H / 2;
+  const semiMidY  = SG_CARD_H + SG_GAP + SG_CARD_H / 2;
+  const mergeY    = (byeMidY + semiMidY) / 2;
+  const leftColH  = SG_CARD_H * 2 + SG_GAP;
+  const finalTop  = mergeY - SG_CARD_H / 2;
+  const HEADER_H  = 28; // approx px for column header
+
+  const PlaceholderCard = ({ label }: { label: string }) => (
+    <div
+      style={{ height: SG_CARD_H, width: SG_CARD_W }}
+      className="rounded-xl border border-dashed border-border flex flex-col items-center justify-center text-[11px] text-muted-foreground gap-0.5"
+    >
+      <span className="font-semibold">{label}</span>
+      <span className="text-[9px]">Pending</span>
+    </div>
+  );
+
+  return (
+    <div className="px-4 overflow-x-auto pb-4">
+      <div className="flex items-start">
+        {/* ── Left column: BYE + Semi-Final ── */}
+        <div style={{ width: SG_CARD_W, flexShrink: 0 }}>
+          <div className="text-[9px] font-black text-primary uppercase tracking-widest text-center mb-2" style={{ height: HEADER_H }}>
+            Semi-Final
+          </div>
+          {/* BYE — 1st place advances directly */}
+          <div
+            style={{ height: SG_CARD_H, width: SG_CARD_W }}
+            className="rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 px-3 flex flex-col justify-center mb-0"
+          >
+            <div className="text-[8px] font-black text-primary/60 uppercase tracking-widest mb-1.5">
+              🏆 1st Place · Bye
+            </div>
+            {firstPlace ? (
+              <div className="flex items-center gap-1.5">
+                <TeamLogo
+                  url={firstPlace.logoUrl ?? ""}
+                  name={firstPlace.name}
+                  shortName={firstPlace.shortName ?? ""}
+                  className="w-5 h-5"
+                />
+                <span className="text-[11px] font-bold text-foreground truncate">{firstPlace.name}</span>
+              </div>
+            ) : (
+              <span className="text-[11px] text-muted-foreground">Group Winner</span>
+            )}
+          </div>
+
+          {/* Gap */}
+          <div style={{ height: SG_GAP }} />
+
+          {/* Semi-Final match */}
+          {semiMatch
+            ? <BracketMatchCard match={semiMatch} />
+            : <PlaceholderCard label="2nd vs 3rd" />}
+        </div>
+
+        {/* ── Connector SVG ── */}
+        <svg
+          width={SG_CONN_W}
+          height={leftColH}
+          style={{ flexShrink: 0, marginTop: HEADER_H }}
+          overflow="visible"
+        >
+          {/* Horiz lines from each card to the midpoint bar */}
+          <line x1={0} y1={byeMidY}  x2={SG_CONN_W / 2} y2={byeMidY}  stroke="hsl(var(--border))" strokeWidth={2} />
+          <line x1={0} y1={semiMidY} x2={SG_CONN_W / 2} y2={semiMidY} stroke="hsl(var(--border))" strokeWidth={2} />
+          {/* Vertical bar joining the two */}
+          <line x1={SG_CONN_W / 2} y1={byeMidY} x2={SG_CONN_W / 2} y2={semiMidY} stroke="hsl(var(--border))" strokeWidth={2} />
+          {/* Horiz line out to Final */}
+          <line x1={SG_CONN_W / 2} y1={mergeY} x2={SG_CONN_W} y2={mergeY} stroke="hsl(var(--border))" strokeWidth={2} />
+        </svg>
+
+        {/* ── Right column: Final ── */}
+        <div style={{ width: SG_CARD_W, flexShrink: 0 }}>
+          <div className="text-[9px] font-black text-primary uppercase tracking-widest text-center mb-2" style={{ height: HEADER_H }}>
+            Final
+          </div>
+          <div style={{ marginTop: finalTop }}>
+            {finalMatch
+              ? <BracketMatchCard match={finalMatch} />
+              : <PlaceholderCard label="Final" />}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── KnockoutBracket ─── */
 const CONNECTOR_W = 24; // px — width of the right connector area
 const CARD_W = 148;     // px — width of each bracket card
@@ -320,7 +435,7 @@ export default function TournamentPage() {
   });
   const { data: standings, isLoading: sLoading } = useGetTournamentStandings(tournamentId, {
     query: {
-      enabled: !!tournamentId && activeTab === "standings",
+      enabled: !!tournamentId && (activeTab === "standings" || (tournament?.format === "group_stage" && activeTab === "bracket")),
       queryKey: getGetTournamentStandingsQueryKey(tournamentId),
     },
   });
@@ -553,9 +668,23 @@ export default function TournamentPage() {
             <div className="px-4">
               <Skeleton className="h-64 w-full rounded-xl" />
             </div>
-          ) : (
-            <KnockoutBracket matches={bracketMatches} />
-          )}
+          ) : (() => {
+            // Single-group format: 1st gets BYE → Final; 2nd vs 3rd → Semi → Final
+            const groupKeys = Object.keys(standings?.groups ?? {});
+            const isSingleGroup = isGroupStage && groupKeys.length === 1;
+            const firstPlaceRow = isSingleGroup
+              ? (standings?.groups[groupKeys[0]!] ?? [])[0]
+              : undefined;
+            if (isSingleGroup) {
+              return (
+                <SingleGroupBracket
+                  bracketMatches={bracketMatches}
+                  firstPlace={firstPlaceRow?.team}
+                />
+              );
+            }
+            return <KnockoutBracket matches={bracketMatches} />;
+          })()}
         </>
       )}
 
