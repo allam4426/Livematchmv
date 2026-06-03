@@ -8,6 +8,7 @@ import AdminDashboard from "./pages/admin";
 import NotFound from "./pages/not-found";
 import StreamPage from "./pages/stream";
 import TournamentPage from "./pages/tournament";
+import TournamentsPage from "./pages/tournaments";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/match/:id" component={MatchDetails} />
           <Route path="/stream/:id" component={StreamPage} />
           <Route path="/tournament/:id" component={TournamentPage} />
+          <Route path="/tournaments" component={TournamentsPage} />
           <Route path="/admin" component={AdminDashboard} />
           <Route component={NotFound} />
         </Switch>

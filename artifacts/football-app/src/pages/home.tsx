@@ -403,14 +403,17 @@ export default function Home() {
             const statusLabel = liveCount > 0 ? "Live" : upcomingCount > 0 ? "Upcoming" : "Finished";
             const statusCount = liveCount > 0 ? liveCount : upcomingCount > 0 ? upcomingCount : matches.length;
             const compStat = competitions?.find(c => c.name === competition);
+            const tournamentId = matches[0]?.tournamentId;
+            const linkedTournament = tournamentId ? activeTournaments?.find(t => t.id === tournamentId) : undefined;
+            const logoUrl = compStat?.logoUrl || linkedTournament?.logoUrl;
 
             return (
               <div key={competition} className="bg-card rounded-xl overflow-hidden mx-4 border border-border">
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
-                      {compStat?.logoUrl ? (
-                        <img src={compStat.logoUrl} alt={competition} className="w-5 h-5 object-contain" />
+                    <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                      {logoUrl ? (
+                        <img src={logoUrl} alt={competition} className="w-6 h-6 object-contain" />
                       ) : (
                         <span className="text-[9px] font-black text-muted-foreground">{competition.slice(0, 2).toUpperCase()}</span>
                       )}

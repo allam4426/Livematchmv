@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
-import { Home as HomeIcon, Gamepad2, Play, LayoutGrid, Sun, Moon } from "lucide-react";
+import { Home as HomeIcon, Gamepad2, Play, LayoutGrid, Sun, Moon, Trophy } from "lucide-react";
 import { useAdminMe } from "@workspace/api-client-react";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -13,12 +13,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const topNav = [
     { href: "/", label: "Home" },
     { href: "/live", label: "Live" },
+    { href: "/tournaments", label: "Tournaments" },
     ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
   ];
 
   const bottomNav = [
     { href: "/", label: "Home", icon: HomeIcon },
     { href: "/live", label: "Live", icon: Gamepad2 },
+    { href: "/tournaments", label: "Cups", icon: Trophy },
     { href: "/stream/1", label: "Stream", icon: Play },
     ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: LayoutGrid }] : []),
   ];
@@ -71,7 +73,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around bg-card border-t border-border px-2 pt-2 pb-5">
         {bottomNav.map((item) => {
           const Icon = item.icon;
-          const isActive = item.href === "/" ? location === "/" : location.startsWith(item.href) && item.href !== "/";
+          const isActive = item.href === "/" ? location === "/" : location === item.href || (location.startsWith(item.href + "/") && item.href !== "/");
           return (
             <Link key={item.href} href={item.href}>
               <span className={cn(
