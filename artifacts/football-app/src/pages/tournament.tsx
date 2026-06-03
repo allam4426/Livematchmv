@@ -570,7 +570,9 @@ export default function TournamentPage() {
       if (!teamMap.has(m.awayTeam.id)) teamMap.set(m.awayTeam.id, m.awayTeam);
     }
   }
-  const participatingTeams = Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  const participatingTeams = Array.from(teamMap.values())
+    .filter(t => t.id !== 0 && !/^tba?d?$/i.test(t.name.trim()))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   /* ── bracket matches (for group_stage: only knockout rounds) ── */
   const allMatchItems = (matches ?? []) as MatchItem[];
