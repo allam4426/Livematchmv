@@ -527,7 +527,8 @@ export const ListTournamentsResponseItem = zod.object({
   "logoUrl": zod.string().nullish(),
   "description": zod.string().nullish(),
   "active": zod.boolean(),
-  "format": zod.enum(['league', 'group_stage', 'knockout'])
+  "format": zod.enum(['league', 'group_stage', 'knockout']),
+  "singleGroupFormat": zod.union([zod.literal('bye_semi'),zod.literal('top2_final'),zod.literal(null)]).nullish().describe('Bracket format for single-group tournaments: bye_semi (1st BYE→Final, 2nd vs 3rd→Semi) or top2_final (1st vs 2nd→Final directly)')
 })
 export const ListTournamentsResponse = zod.array(ListTournamentsResponseItem)
 
@@ -541,7 +542,8 @@ export const CreateTournamentBody = zod.object({
   "season": zod.string(),
   "logoUrl": zod.string().optional(),
   "description": zod.string().optional(),
-  "format": zod.enum(['league', 'group_stage', 'knockout']).optional()
+  "format": zod.enum(['league', 'group_stage', 'knockout']).optional(),
+  "singleGroupFormat": zod.enum(['bye_semi', 'top2_final']).optional()
 })
 
 
@@ -560,7 +562,8 @@ export const GetTournamentResponse = zod.object({
   "logoUrl": zod.string().nullish(),
   "description": zod.string().nullish(),
   "active": zod.boolean(),
-  "format": zod.enum(['league', 'group_stage', 'knockout'])
+  "format": zod.enum(['league', 'group_stage', 'knockout']),
+  "singleGroupFormat": zod.union([zod.literal('bye_semi'),zod.literal('top2_final'),zod.literal(null)]).nullish().describe('Bracket format for single-group tournaments: bye_semi (1st BYE→Final, 2nd vs 3rd→Semi) or top2_final (1st vs 2nd→Final directly)')
 })
 
 
@@ -578,7 +581,8 @@ export const UpdateTournamentBody = zod.object({
   "logoUrl": zod.string().optional(),
   "description": zod.string().optional(),
   "active": zod.boolean().optional(),
-  "format": zod.enum(['league', 'group_stage', 'knockout']).optional()
+  "format": zod.enum(['league', 'group_stage', 'knockout']).optional(),
+  "singleGroupFormat": zod.enum(['bye_semi', 'top2_final']).optional()
 })
 
 export const UpdateTournamentResponse = zod.object({
@@ -589,7 +593,8 @@ export const UpdateTournamentResponse = zod.object({
   "logoUrl": zod.string().nullish(),
   "description": zod.string().nullish(),
   "active": zod.boolean(),
-  "format": zod.enum(['league', 'group_stage', 'knockout'])
+  "format": zod.enum(['league', 'group_stage', 'knockout']),
+  "singleGroupFormat": zod.union([zod.literal('bye_semi'),zod.literal('top2_final'),zod.literal(null)]).nullish().describe('Bracket format for single-group tournaments: bye_semi (1st BYE→Final, 2nd vs 3rd→Semi) or top2_final (1st vs 2nd→Final directly)')
 })
 
 
@@ -617,6 +622,7 @@ export const ListActiveTournamentsResponseItem = zod.object({
   "description": zod.string().nullish(),
   "active": zod.boolean(),
   "format": zod.enum(['league', 'group_stage', 'knockout']),
+  "singleGroupFormat": zod.union([zod.literal('bye_semi'),zod.literal('top2_final'),zod.literal(null)]).nullish(),
   "matchStatus": zod.enum(['live', 'ongoing', 'upcoming', 'finished']),
   "matchCount": zod.number(),
   "liveCount": zod.number().optional()

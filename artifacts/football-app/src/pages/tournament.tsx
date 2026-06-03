@@ -277,6 +277,96 @@ function SingleGroupBracket({
   );
 }
 
+/* ─── Top2FinalBracket ─── */
+// Special bracket for single-group tournaments where 1st vs 2nd go directly to Final
+function Top2FinalBracket({
+  bracketMatches,
+  firstPlace,
+  secondPlace,
+}: {
+  bracketMatches: MatchItem[];
+  firstPlace: StandingTeam | undefined;
+  secondPlace: StandingTeam | undefined;
+}) {
+  const T2_CARD_W = 152;
+  const T2_CONN_W = 36;
+  const T2_CARD_H = 76;
+
+  const finalMatch = bracketMatches.find(m =>
+    normalizeRound(m.matchGroup ?? "").includes("final")
+  );
+
+  const SeedCard = ({ rank, team }: { rank: string; team: StandingTeam | undefined }) => (
+    <div
+      style={{ height: T2_CARD_H, width: T2_CARD_W }}
+      className="rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 px-3 flex flex-col justify-center"
+    >
+      <div className="text-[8px] font-black text-primary/60 uppercase tracking-widest mb-1.5">
+        {rank}
+      </div>
+      {team ? (
+        <div className="flex items-center gap-1.5">
+          <TeamLogo url={team.logoUrl ?? ""} name={team.name} shortName={team.shortName ?? ""} className="w-5 h-5" />
+          <span className="text-[11px] font-bold text-foreground truncate">{team.name}</span>
+        </div>
+      ) : (
+        <span className="text-[11px] text-muted-foreground">Group Finalist</span>
+      )}
+    </div>
+  );
+
+  const GAP = 20;
+  const totalH = T2_CARD_H * 2 + GAP;
+  const topMidY = T2_CARD_H / 2;
+  const botMidY = T2_CARD_H + GAP + T2_CARD_H / 2;
+  const mergeY = (topMidY + botMidY) / 2;
+  const finalTop = mergeY - T2_CARD_H / 2;
+  const HEADER_H = 28;
+
+  return (
+    <div className="px-4 overflow-x-auto pb-4">
+      <div className="flex items-start">
+        {/* Left column: 1st & 2nd seed cards */}
+        <div style={{ width: T2_CARD_W, flexShrink: 0 }}>
+          <div className="text-[9px] font-black text-primary uppercase tracking-widest text-center mb-2" style={{ height: HEADER_H }}>
+            Group Standings
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: GAP }}>
+            <SeedCard rank="🥇 1st Place" team={firstPlace} />
+            <SeedCard rank="🥈 2nd Place" team={secondPlace} />
+          </div>
+        </div>
+
+        {/* Connector SVG */}
+        <svg width={T2_CONN_W} height={totalH} style={{ flexShrink: 0, marginTop: HEADER_H }} overflow="visible">
+          <line x1={0} y1={topMidY} x2={T2_CONN_W / 2} y2={topMidY} stroke="hsl(var(--border))" strokeWidth={2} />
+          <line x1={0} y1={botMidY} x2={T2_CONN_W / 2} y2={botMidY} stroke="hsl(var(--border))" strokeWidth={2} />
+          <line x1={T2_CONN_W / 2} y1={topMidY} x2={T2_CONN_W / 2} y2={botMidY} stroke="hsl(var(--border))" strokeWidth={2} />
+          <line x1={T2_CONN_W / 2} y1={mergeY} x2={T2_CONN_W} y2={mergeY} stroke="hsl(var(--border))" strokeWidth={2} />
+        </svg>
+
+        {/* Right column: Final */}
+        <div style={{ width: T2_CARD_W, flexShrink: 0 }}>
+          <div className="text-[9px] font-black text-primary uppercase tracking-widest text-center mb-2" style={{ height: HEADER_H }}>
+            Final
+          </div>
+          <div style={{ marginTop: finalTop }}>
+            {finalMatch ? (
+              <BracketMatchCard match={finalMatch} />
+            ) : (
+              <div style={{ height: T2_CARD_H, width: T2_CARD_W }}
+                className="rounded-xl border border-dashed border-border flex flex-col items-center justify-center text-[11px] text-muted-foreground gap-0.5">
+                <span className="font-semibold">Final</span>
+                <span className="text-[9px]">Pending</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── KnockoutBracket ─── */
 const CONNECTOR_W = 24; // px — width of the right connector area
 const CARD_W = 148;     // px — width of each bracket card
@@ -669,13 +759,25 @@ export default function TournamentPage() {
               <Skeleton className="h-64 w-full rounded-xl" />
             </div>
           ) : (() => {
-            // Single-group format: 1st gets BYE → Final; 2nd vs 3rd → Semi → Final
             const groupKeys = Object.keys(standings?.groups ?? {});
             const isSingleGroup = isGroupStage && groupKeys.length === 1;
-            const firstPlaceRow = isSingleGroup
-              ? (standings?.groups[groupKeys[0]!] ?? [])[0]
-              : undefined;
-            if (isSingleGroup) {
+            const sgFmt = tournament.singleGroupFormat;
+            const groupRows = isSingleGroup ? (standings?.groups[groupKeys[0]!] ?? []) : [];
+            const firstPlaceRow  = groupRows[0];
+            const secondPlaceRow = groupRows[1];
+
+            // top2_final: 1st vs 2nd → Final directly
+            if (isSingleGroup && sgFmt === "top2_final") {
+              return (
+                <Top2FinalBracket
+                  bracketMatches={bracketMatches}
+                  firstPlace={firstPlaceRow?.team}
+                  secondPlace={secondPlaceRow?.team}
+                />
+              );
+            }
+            // bye_semi (or no format set on a single-group tournament): 1st BYE, 2nd vs 3rd → Semi → Final
+            if (isSingleGroup && (sgFmt === "bye_semi" || sgFmt == null)) {
               return (
                 <SingleGroupBracket
                   bracketMatches={bracketMatches}
@@ -683,6 +785,7 @@ export default function TournamentPage() {
                 />
               );
             }
+            // Multi-group or knockout: standard bracket
             return <KnockoutBracket matches={bracketMatches} />;
           })()}
         </>

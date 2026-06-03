@@ -7,6 +7,7 @@
  */
 import type { TournamentWithStatusFormat } from './tournamentWithStatusFormat';
 import type { TournamentWithStatusMatchStatus } from './tournamentWithStatusMatchStatus';
+import type { TournamentWithStatusSingleGroupFormat } from './tournamentWithStatusSingleGroupFormat';
 import type { TournamentWithStatusSport } from './tournamentWithStatusSport';
 
 export interface TournamentWithStatus {
@@ -20,6 +21,8 @@ export interface TournamentWithStatus {
   description?: string | null;
   active: boolean;
   format: TournamentWithStatusFormat;
+  /** @nullable */
+  singleGroupFormat?: TournamentWithStatusSingleGroupFormat;
   matchStatus: TournamentWithStatusMatchStatus;
   matchCount: number;
   liveCount?: number;

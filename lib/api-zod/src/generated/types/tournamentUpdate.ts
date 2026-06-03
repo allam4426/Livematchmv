@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { TournamentUpdateFormat } from './tournamentUpdateFormat';
+import type { TournamentUpdateSingleGroupFormat } from './tournamentUpdateSingleGroupFormat';
 import type { TournamentUpdateSport } from './tournamentUpdateSport';
 
 export interface TournamentUpdate {
@@ -16,4 +17,5 @@ export interface TournamentUpdate {
   description?: string;
   active?: boolean;
   format?: TournamentUpdateFormat;
+  singleGroupFormat?: TournamentUpdateSingleGroupFormat;
 }

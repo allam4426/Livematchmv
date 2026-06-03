@@ -11,6 +11,7 @@ export const tournamentsTable = pgTable("tournaments", {
   description: text("description"),
   active: boolean("active").notNull().default(true),
   format: text("format").notNull().default("league"),
+  singleGroupFormat: text("single_group_format"),
 });
 
 export const insertTournamentSchema = createInsertSchema(tournamentsTable).omit({ id: true });

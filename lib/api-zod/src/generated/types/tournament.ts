@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { TournamentFormat } from './tournamentFormat';
+import type { TournamentSingleGroupFormat } from './tournamentSingleGroupFormat';
 import type { TournamentSport } from './tournamentSport';
 
 export interface Tournament {
@@ -19,4 +20,9 @@ export interface Tournament {
   description?: string | null;
   active: boolean;
   format: TournamentFormat;
+  /**
+     * Bracket format for single-group tournaments: bye_semi (1st BYE→Final, 2nd vs 3rd→Semi) or top2_final (1st vs 2nd→Final directly)
+     * @nullable
+     */
+  singleGroupFormat?: TournamentSingleGroupFormat;
 }

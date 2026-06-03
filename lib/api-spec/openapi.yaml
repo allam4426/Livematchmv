@@ -1364,6 +1364,10 @@ components:
         format:
           type: string
           enum: [league, group_stage, knockout]
+        singleGroupFormat:
+          type: ["string", "null"]
+          enum: [bye_semi, top2_final, null]
+          description: "Bracket format for single-group tournaments: bye_semi (1st BYE→Final, 2nd vs 3rd→Semi) or top2_final (1st vs 2nd→Final directly)"
 
     TournamentWithStatus:
       type: object
@@ -1387,6 +1391,9 @@ components:
         format:
           type: string
           enum: [league, group_stage, knockout]
+        singleGroupFormat:
+          type: ["string", "null"]
+          enum: [bye_semi, top2_final, null]
         matchStatus:
           type: string
           enum: [live, ongoing, upcoming, finished]
@@ -1413,6 +1420,9 @@ components:
         format:
           type: string
           enum: [league, group_stage, knockout]
+        singleGroupFormat:
+          type: string
+          enum: [bye_semi, top2_final]
 
     TournamentUpdate:
       type: object
@@ -1433,6 +1443,9 @@ components:
         format:
           type: string
           enum: [league, group_stage, knockout]
+        singleGroupFormat:
+          type: string
+          enum: [bye_semi, top2_final]
 
     TournamentStandings:
       type: object

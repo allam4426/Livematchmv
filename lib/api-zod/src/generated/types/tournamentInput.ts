@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { TournamentInputFormat } from './tournamentInputFormat';
+import type { TournamentInputSingleGroupFormat } from './tournamentInputSingleGroupFormat';
 import type { TournamentInputSport } from './tournamentInputSport';
 
 export interface TournamentInput {
@@ -15,4 +16,5 @@ export interface TournamentInput {
   logoUrl?: string;
   description?: string;
   format?: TournamentInputFormat;
+  singleGroupFormat?: TournamentInputSingleGroupFormat;
 }

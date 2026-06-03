@@ -12,8 +12,13 @@ import { cn } from "@/lib/utils";
 
 type Sport = "football" | "futsal";
 type Format = "league" | "group_stage" | "knockout";
-const EMPTY = { name: "", sport: "football" as Sport, season: "", logoUrl: "", description: "", format: "league" as Format };
+type SingleGroupFmt = "bye_semi" | "top2_final" | "";
+const EMPTY = { name: "", sport: "football" as Sport, season: "", logoUrl: "", description: "", format: "league" as Format, singleGroupFormat: "" as SingleGroupFmt };
 const FORMAT_LABELS: Record<Format, string> = { league: "League", group_stage: "Group Stage", knockout: "Knockout" };
+const SINGLE_GROUP_LABELS: Record<string, string> = {
+  bye_semi: "1st BYE → Final · 2nd vs 3rd → Semi",
+  top2_final: "1st vs 2nd → Final directly",
+};
 
 export function TournamentsTab() {
   const qc = useQueryClient();
@@ -33,12 +38,14 @@ export function TournamentsTab() {
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.season) return;
-    createTournament.mutate({ data: { ...form } }, {
+    const { singleGroupFormat: sgf, ...rest } = form;
+    const payload = sgf ? { ...rest, singleGroupFormat: sgf as "bye_semi" | "top2_final" } : rest;
+    createTournament.mutate({ data: payload }, {
       onSuccess: () => { setForm({ ...EMPTY }); setShowForm(false); invalidate(); },
     });
   };
 
-  const handleEditStart = (t: { id: number; name: string; sport: string; season: string; logoUrl?: string | null; description?: string | null; format: string }) => {
+  const handleEditStart = (t: { id: number; name: string; sport: string; season: string; logoUrl?: string | null; description?: string | null; format: string; singleGroupFormat?: string | null }) => {
     setEditingId(t.id);
     setEditForm({
       name: t.name,
@@ -47,13 +54,16 @@ export function TournamentsTab() {
       logoUrl: t.logoUrl ?? "",
       description: t.description ?? "",
       format: (t.format ?? "league") as Format,
+      singleGroupFormat: (t.singleGroupFormat ?? "") as SingleGroupFmt,
     });
     setExpandedId(null);
   };
 
   const handleEditSave = (id: number) => {
     if (!editForm.name || !editForm.season) return;
-    updateTournament.mutate({ id, data: { ...editForm } }, {
+    const { singleGroupFormat: sgf, ...rest } = editForm;
+    const payload = sgf ? { ...rest, singleGroupFormat: sgf as "bye_semi" | "top2_final" } : rest;
+    updateTournament.mutate({ id, data: payload }, {
       onSuccess: () => { setEditingId(null); invalidate(); },
     });
   };
@@ -97,12 +107,22 @@ export function TournamentsTab() {
             </div>
             <div>
               <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Format</label>
-              <select value={form.format} onChange={e => setForm(f => ({ ...f, format: e.target.value as Format }))} className="admin-input">
+              <select value={form.format} onChange={e => setForm(f => ({ ...f, format: e.target.value as Format, singleGroupFormat: "" }))} className="admin-input">
                 <option value="league">League</option>
                 <option value="group_stage">Group Stage</option>
                 <option value="knockout">Knockout</option>
               </select>
             </div>
+            {form.format === "group_stage" && (
+              <div className="col-span-2">
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Single-Group Bracket Format</label>
+                <select value={form.singleGroupFormat} onChange={e => setForm(f => ({ ...f, singleGroupFormat: e.target.value as SingleGroupFmt }))} className="admin-input">
+                  <option value="">— Auto / Multiple Groups —</option>
+                  <option value="bye_semi">1st BYE → Final · 2nd vs 3rd → Semi-Final</option>
+                  <option value="top2_final">1st vs 2nd → Final directly</option>
+                </select>
+              </div>
+            )}
             <div>
               <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Logo URL</label>
               <input value={form.logoUrl} onChange={e => setForm(f => ({ ...f, logoUrl: e.target.value }))}
@@ -156,12 +176,22 @@ export function TournamentsTab() {
                     </div>
                     <div>
                       <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Format</label>
-                      <select value={editForm.format} onChange={e => setEditForm(f => ({ ...f, format: e.target.value as Format }))} className="admin-input">
+                      <select value={editForm.format} onChange={e => setEditForm(f => ({ ...f, format: e.target.value as Format, singleGroupFormat: "" }))} className="admin-input">
                         <option value="league">League</option>
                         <option value="group_stage">Group Stage</option>
                         <option value="knockout">Knockout</option>
                       </select>
                     </div>
+                    {editForm.format === "group_stage" && (
+                      <div className="col-span-2">
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Single-Group Bracket Format</label>
+                        <select value={editForm.singleGroupFormat} onChange={e => setEditForm(f => ({ ...f, singleGroupFormat: e.target.value as SingleGroupFmt }))} className="admin-input">
+                          <option value="">— Auto / Multiple Groups —</option>
+                          <option value="bye_semi">1st BYE → Final · 2nd vs 3rd → Semi-Final</option>
+                          <option value="top2_final">1st vs 2nd → Final directly</option>
+                        </select>
+                      </div>
+                    )}
                     <div>
                       <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Logo URL</label>
                       <input value={editForm.logoUrl} onChange={e => setEditForm(f => ({ ...f, logoUrl: e.target.value }))}

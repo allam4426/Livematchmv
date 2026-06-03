@@ -123,6 +123,18 @@ export const TournamentFormat = {
   knockout: 'knockout',
 } as const;
 
+/**
+ * Bracket format for single-group tournaments: bye_semi (1st BYE→Final, 2nd vs 3rd→Semi) or top2_final (1st vs 2nd→Final directly)
+ * @nullable
+ */
+export type TournamentSingleGroupFormat = typeof TournamentSingleGroupFormat[keyof typeof TournamentSingleGroupFormat] | null;
+
+
+export const TournamentSingleGroupFormat = {
+  bye_semi: 'bye_semi',
+  top2_final: 'top2_final',
+} as const;
+
 export interface Tournament {
   id: number;
   name: string;
@@ -134,6 +146,11 @@ export interface Tournament {
   description?: string | null;
   active: boolean;
   format: TournamentFormat;
+  /**
+     * Bracket format for single-group tournaments: bye_semi (1st BYE→Final, 2nd vs 3rd→Semi) or top2_final (1st vs 2nd→Final directly)
+     * @nullable
+     */
+  singleGroupFormat?: TournamentSingleGroupFormat;
 }
 
 export type TournamentWithStatusSport = typeof TournamentWithStatusSport[keyof typeof TournamentWithStatusSport];
@@ -151,6 +168,17 @@ export const TournamentWithStatusFormat = {
   league: 'league',
   group_stage: 'group_stage',
   knockout: 'knockout',
+} as const;
+
+/**
+ * @nullable
+ */
+export type TournamentWithStatusSingleGroupFormat = typeof TournamentWithStatusSingleGroupFormat[keyof typeof TournamentWithStatusSingleGroupFormat] | null;
+
+
+export const TournamentWithStatusSingleGroupFormat = {
+  bye_semi: 'bye_semi',
+  top2_final: 'top2_final',
 } as const;
 
 export type TournamentWithStatusMatchStatus = typeof TournamentWithStatusMatchStatus[keyof typeof TournamentWithStatusMatchStatus];
@@ -174,6 +202,8 @@ export interface TournamentWithStatus {
   description?: string | null;
   active: boolean;
   format: TournamentWithStatusFormat;
+  /** @nullable */
+  singleGroupFormat?: TournamentWithStatusSingleGroupFormat;
   matchStatus: TournamentWithStatusMatchStatus;
   matchCount: number;
   liveCount?: number;
@@ -196,6 +226,14 @@ export const TournamentInputFormat = {
   knockout: 'knockout',
 } as const;
 
+export type TournamentInputSingleGroupFormat = typeof TournamentInputSingleGroupFormat[keyof typeof TournamentInputSingleGroupFormat];
+
+
+export const TournamentInputSingleGroupFormat = {
+  bye_semi: 'bye_semi',
+  top2_final: 'top2_final',
+} as const;
+
 export interface TournamentInput {
   name: string;
   sport: TournamentInputSport;
@@ -203,6 +241,7 @@ export interface TournamentInput {
   logoUrl?: string;
   description?: string;
   format?: TournamentInputFormat;
+  singleGroupFormat?: TournamentInputSingleGroupFormat;
 }
 
 export type TournamentUpdateSport = typeof TournamentUpdateSport[keyof typeof TournamentUpdateSport];
@@ -222,6 +261,14 @@ export const TournamentUpdateFormat = {
   knockout: 'knockout',
 } as const;
 
+export type TournamentUpdateSingleGroupFormat = typeof TournamentUpdateSingleGroupFormat[keyof typeof TournamentUpdateSingleGroupFormat];
+
+
+export const TournamentUpdateSingleGroupFormat = {
+  bye_semi: 'bye_semi',
+  top2_final: 'top2_final',
+} as const;
+
 export interface TournamentUpdate {
   name?: string;
   sport?: TournamentUpdateSport;
@@ -230,6 +277,7 @@ export interface TournamentUpdate {
   description?: string;
   active?: boolean;
   format?: TournamentUpdateFormat;
+  singleGroupFormat?: TournamentUpdateSingleGroupFormat;
 }
 
 export type TournamentStandingsFormat = typeof TournamentStandingsFormat[keyof typeof TournamentStandingsFormat];
