@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AdminLoginInput {
-  email?: string;
-  password: string;
-}
+export type DeleteAdminStaff200 = {
+  success: boolean;
+};

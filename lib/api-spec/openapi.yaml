@@ -167,6 +167,61 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdminAuthStatus"
 
+  /admin/staff:
+    get:
+      operationId: listAdminStaff
+      tags: [admin]
+      summary: List all staff accounts
+      responses:
+        "200":
+          description: Staff list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminStaff"
+    post:
+      operationId: createAdminStaff
+      tags: [admin]
+      summary: Create a staff account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminStaffInput"
+      responses:
+        "201":
+          description: Staff created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStaff"
+
+  /admin/staff/{id}:
+    delete:
+      operationId: deleteAdminStaff
+      tags: [admin]
+      summary: Delete a staff account
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+
   /teams:
     get:
       operationId: listTeams
@@ -1057,6 +1112,8 @@ components:
       type: object
       required: [password]
       properties:
+        email:
+          type: string
         password:
           type: string
 
@@ -1066,6 +1123,37 @@ components:
       properties:
         authenticated:
           type: boolean
+        role:
+          type: string
+          enum: [superadmin, staff]
+        email:
+          type: string
+        name:
+          type: string
+
+    AdminStaff:
+      type: object
+      required: [id, email, name, createdAt]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+
+    AdminStaffInput:
+      type: object
+      required: [email, name, password]
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+        password:
+          type: string
 
     TeamForm:
       type: object

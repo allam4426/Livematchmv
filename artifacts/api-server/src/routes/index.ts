@@ -9,12 +9,14 @@ import tournamentsRouter from "./tournaments";
 import eventsRouter from "./events";
 import lineupRouter from "./lineup";
 import adminAuthRouter from "./admin-auth";
+import adminStaffRouter from "./admin-staff";
 import squadRouter from "./squad";
 import bannersRouter from "./banners";
 
 const router: IRouter = Router();
 
 router.use(adminAuthRouter);
+router.use(adminStaffRouter);
 router.use(squadRouter);
 router.use(healthRouter);
 router.use(matchesRouter);

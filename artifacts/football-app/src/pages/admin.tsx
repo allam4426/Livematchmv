@@ -12,12 +12,16 @@ import { StreamsTab } from "@/components/admin/streams-tab";
 import { PlayersTab } from "@/components/admin/players-tab";
 import { BannersTab } from "@/components/admin/banners-tab";
 import { SpotlightsTab } from "@/components/admin/spotlights-tab";
-import { Activity, Calendar, CheckCircle2, Users, Trophy, LayoutGrid, LogOut, Lock, Image } from "lucide-react";
+import { StaffTab } from "@/components/admin/staff-tab";
+import { Activity, Calendar, CheckCircle2, Users, Trophy, LayoutGrid, LogOut, Lock, Image, UserCog, Mail } from "lucide-react";
 
-const TABS = ["Overview", "Spotlights", "Teams", "Players", "Tournaments", "Matches", "Live Events", "Lineup", "Streams", "Banners"] as const;
-type Tab = typeof TABS[number];
+const SUPERADMIN_TABS = ["Overview", "Spotlights", "Teams", "Players", "Tournaments", "Matches", "Live Events", "Lineup", "Streams", "Banners", "Staff"] as const;
+const STAFF_TABS = ["Overview", "Spotlights", "Teams", "Players", "Tournaments", "Matches", "Live Events", "Lineup", "Streams", "Banners"] as const;
+type Tab = typeof SUPERADMIN_TABS[number];
 
 function LoginPage() {
+  const [mode, setMode] = useState<"superadmin" | "staff">("superadmin");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const queryClient = useQueryClient();
@@ -26,15 +30,16 @@ function LoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    login.mutate({ data: { password } }, {
+    const data = mode === "staff" ? { email, password } : { password };
+    login.mutate({ data }, {
       onSuccess: (result) => {
         if (result.authenticated) {
           queryClient.invalidateQueries({ queryKey: getAdminMeQueryKey() });
         } else {
-          setError("Wrong password. Try again.");
+          setError("Wrong credentials. Try again.");
         }
       },
-      onError: () => setError("Wrong password. Try again."),
+      onError: () => setError("Wrong credentials. Try again."),
     });
   };
 
@@ -48,14 +53,55 @@ function LoginPage() {
           <h1 className="text-2xl font-black text-foreground">Admin Access</h1>
           <p className="text-sm text-muted-foreground mt-1">Livematchmv control panel</p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
+
+        {/* Mode toggle */}
+        <div className="flex rounded-xl border border-border overflow-hidden mb-4 bg-card">
+          <button
+            type="button"
+            onClick={() => { setMode("superadmin"); setError(""); }}
+            className={cn(
+              "flex-1 py-2 text-xs font-semibold transition-all",
+              mode === "superadmin" ? "bg-primary text-white" : "text-muted-foreground"
+            )}
+          >
+            Master Admin
+          </button>
+          <button
+            type="button"
+            onClick={() => { setMode("staff"); setError(""); }}
+            className={cn(
+              "flex-1 py-2 text-xs font-semibold transition-all",
+              mode === "staff" ? "bg-primary text-white" : "text-muted-foreground"
+            )}
+          >
+            Staff Login
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {mode === "staff" && (
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="staff@livematchmv.online"
+                  required
+                  className="w-full pl-10 pr-4 py-3 bg-card border border-border rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary text-sm"
+                />
+              </div>
+            </div>
+          )}
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Password</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Enter admin password"
+              placeholder="Enter password"
               data-testid="input-admin-password"
               className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary text-sm"
             />
@@ -70,7 +116,10 @@ function LoginPage() {
             {login.isPending ? "Signing in..." : "Sign In"}
           </button>
         </form>
-        <p className="text-center text-xs text-muted-foreground mt-6">Default password: <code className="text-primary">admin2024</code></p>
+
+        {mode === "superadmin" && (
+          <p className="text-center text-xs text-muted-foreground mt-6">Default password: <code className="text-primary">admin2024</code></p>
+        )}
       </div>
     </div>
   );
@@ -111,6 +160,8 @@ export default function AdminDashboard() {
   const { data: auth, isLoading } = useAdminMe();
   const logout = useAdminLogout();
   const queryClient = useQueryClient();
+  const isSuperadmin = auth?.role === "superadmin";
+  const TABS = isSuperadmin ? SUPERADMIN_TABS : STAFF_TABS;
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
 
   const handleLogout = () => {
@@ -139,6 +190,7 @@ export default function AdminDashboard() {
     "Lineup": <LineupTab />,
     "Streams": <StreamsTab />,
     "Banners": <BannersTab />,
+    "Staff": <StaffTab />,
   };
 
   return (
@@ -147,7 +199,9 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <div>
           <h1 className="text-xl font-black text-foreground">Admin Dashboard</h1>
-          <p className="text-xs text-muted-foreground">Manage all platform content</p>
+          <p className="text-xs text-muted-foreground">
+            {isSuperadmin ? "Master Admin" : auth?.name ?? auth?.email ?? "Staff"} • Logged in
+          </p>
         </div>
         <button onClick={handleLogout} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted rounded-xl px-3 py-2 transition-colors">
           <LogOut className="w-3.5 h-3.5" />
@@ -176,7 +230,7 @@ export default function AdminDashboard() {
 
       {/* Tab content */}
       <div className="px-4">
-        {tabContent[activeTab]}
+        {tabContent[activeTab as Tab]}
       </div>
     </div>
   );

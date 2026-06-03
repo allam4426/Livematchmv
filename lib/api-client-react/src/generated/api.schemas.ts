@@ -10,11 +10,36 @@ export interface HealthStatus {
 }
 
 export interface AdminLoginInput {
+  email?: string;
   password: string;
 }
 
+export type AdminAuthStatusRole = typeof AdminAuthStatusRole[keyof typeof AdminAuthStatusRole];
+
+
+export const AdminAuthStatusRole = {
+  superadmin: 'superadmin',
+  staff: 'staff',
+} as const;
+
 export interface AdminAuthStatus {
   authenticated: boolean;
+  role?: AdminAuthStatusRole;
+  email?: string;
+  name?: string;
+}
+
+export interface AdminStaff {
+  id: number;
+  email: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface AdminStaffInput {
+  email: string;
+  name: string;
+  password: string;
 }
 
 export type TeamFormFormItem = typeof TeamFormFormItem[keyof typeof TeamFormFormItem];
@@ -626,6 +651,45 @@ export interface CompetitionStat {
   totalCount: number;
 }
 
+export type PlayerStatsTeam = {
+  id: number;
+  name: string;
+  /** @nullable */
+  shortName: string | null;
+  /** @nullable */
+  logoUrl: string | null;
+} | null;
+
+export interface PlayerStats {
+  player: SquadPlayer;
+  team?: PlayerStatsTeam;
+  goals: number;
+  assists: number;
+  yellowCards: number;
+  redCards: number;
+  ownGoals: number;
+  appearances: number;
+}
+
+export interface TopScorer {
+  playerName: string;
+  /** @nullable */
+  playerNumber?: string | null;
+  teamId: number;
+  teamName: string;
+  /** @nullable */
+  teamShortName?: string | null;
+  /** @nullable */
+  teamLogoUrl?: string | null;
+  goals: number;
+  assists: number;
+}
+
+export interface TournamentTopScorers {
+  topScorers: TopScorer[];
+  mvp: TopScorer[];
+}
+
 export type ListBannersParams = {
 position?: ListBannersPosition;
 };
@@ -637,6 +701,10 @@ export const ListBannersPosition = {
   top_home: 'top_home',
   top_live: 'top_live',
 } as const;
+
+export type DeleteAdminStaff200 = {
+  success: boolean;
+};
 
 export type ListTeamsParams = {
 sport?: ListTeamsSport;

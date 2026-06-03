@@ -5,7 +5,11 @@
  * FootballLive API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminAuthStatusRole } from './adminAuthStatusRole';
 
 export interface AdminAuthStatus {
   authenticated: boolean;
+  role?: AdminAuthStatusRole;
+  email?: string;
+  name?: string;
 }

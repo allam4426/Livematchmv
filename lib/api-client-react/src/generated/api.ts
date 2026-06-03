@@ -22,9 +22,12 @@ import type {
 import type {
   AdminAuthStatus,
   AdminLoginInput,
+  AdminStaff,
+  AdminStaffInput,
   Banner,
   BannerInput,
   CompetitionStat,
+  DeleteAdminStaff200,
   HealthStatus,
   Highlight,
   HighlightInput,
@@ -45,6 +48,7 @@ import type {
   MatchInput,
   MatchLineup,
   MatchUpdate,
+  PlayerStats,
   SquadPlayer,
   SquadPlayerInput,
   StatsSummary,
@@ -57,6 +61,7 @@ import type {
   Tournament,
   TournamentInput,
   TournamentStandings,
+  TournamentTopScorers,
   TournamentUpdate,
   TournamentWithStatus
 } from './api.schemas';
@@ -664,6 +669,224 @@ export function useAdminMe<TData = Awaited<ReturnType<typeof adminMe>>, TError =
 
 
 
+
+export const getListAdminStaffUrl = () => {
+
+
+
+
+  return `/api/admin/staff`
+}
+
+/**
+ * @summary List all staff accounts
+ */
+export const listAdminStaff = async ( options?: RequestInit): Promise<AdminStaff[]> => {
+
+  return customFetch<AdminStaff[]>(getListAdminStaffUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminStaffQueryKey = () => {
+    return [
+    `/api/admin/staff`
+    ] as const;
+    }
+
+
+export const getListAdminStaffQueryOptions = <TData = Awaited<ReturnType<typeof listAdminStaff>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminStaff>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminStaffQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminStaff>>> = ({ signal }) => listAdminStaff({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminStaff>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminStaffQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminStaff>>>
+export type ListAdminStaffQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all staff accounts
+ */
+
+export function useListAdminStaff<TData = Awaited<ReturnType<typeof listAdminStaff>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminStaff>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminStaffQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateAdminStaffUrl = () => {
+
+
+
+
+  return `/api/admin/staff`
+}
+
+/**
+ * @summary Create a staff account
+ */
+export const createAdminStaff = async (adminStaffInput: AdminStaffInput, options?: RequestInit): Promise<AdminStaff> => {
+
+  return customFetch<AdminStaff>(getCreateAdminStaffUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      adminStaffInput,)
+  }
+);}
+
+
+
+
+export const getCreateAdminStaffMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminStaff>>, TError,{data: BodyType<AdminStaffInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAdminStaff>>, TError,{data: BodyType<AdminStaffInput>}, TContext> => {
+
+const mutationKey = ['createAdminStaff'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAdminStaff>>, {data: BodyType<AdminStaffInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAdminStaff(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdminStaffMutationResult = NonNullable<Awaited<ReturnType<typeof createAdminStaff>>>
+    export type CreateAdminStaffMutationBody = BodyType<AdminStaffInput>
+    export type CreateAdminStaffMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a staff account
+ */
+export const useCreateAdminStaff = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminStaff>>, TError,{data: BodyType<AdminStaffInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAdminStaff>>,
+        TError,
+        {data: BodyType<AdminStaffInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAdminStaffMutationOptions(options));
+    }
+
+export const getDeleteAdminStaffUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/staff/${id}`
+}
+
+/**
+ * @summary Delete a staff account
+ */
+export const deleteAdminStaff = async (id: number, options?: RequestInit): Promise<DeleteAdminStaff200> => {
+
+  return customFetch<DeleteAdminStaff200>(getDeleteAdminStaffUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAdminStaffMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminStaff>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminStaff>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteAdminStaff'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAdminStaff>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAdminStaff(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdminStaffMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminStaff>>>
+
+    export type DeleteAdminStaffMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a staff account
+ */
+export const useDeleteAdminStaff = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminStaff>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAdminStaff>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteAdminStaffMutationOptions(options));
+    }
 
 export const getListTeamsUrl = (params?: ListTeamsParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -1411,6 +1634,160 @@ export const useRemoveSquadPlayer = <TError = ErrorType<unknown>,
       return useMutation(getRemoveSquadPlayerMutationOptions(options));
     }
 
+export const getGetSquadPlayerUrl = (playerId: number,) => {
+
+
+
+
+  return `/api/squad/${playerId}`
+}
+
+/**
+ * @summary Get a single squad player by ID
+ */
+export const getSquadPlayer = async (playerId: number, options?: RequestInit): Promise<SquadPlayer> => {
+
+  return customFetch<SquadPlayer>(getGetSquadPlayerUrl(playerId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSquadPlayerQueryKey = (playerId: number,) => {
+    return [
+    `/api/squad/${playerId}`
+    ] as const;
+    }
+
+
+export const getGetSquadPlayerQueryOptions = <TData = Awaited<ReturnType<typeof getSquadPlayer>>, TError = ErrorType<unknown>>(playerId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSquadPlayer>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSquadPlayerQueryKey(playerId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSquadPlayer>>> = ({ signal }) => getSquadPlayer(playerId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(playerId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSquadPlayer>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSquadPlayerQueryResult = NonNullable<Awaited<ReturnType<typeof getSquadPlayer>>>
+export type GetSquadPlayerQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get a single squad player by ID
+ */
+
+export function useGetSquadPlayer<TData = Awaited<ReturnType<typeof getSquadPlayer>>, TError = ErrorType<unknown>>(
+ playerId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSquadPlayer>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSquadPlayerQueryOptions(playerId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSquadPlayerStatsUrl = (playerId: number,) => {
+
+
+
+
+  return `/api/squad/${playerId}/stats`
+}
+
+/**
+ * @summary Get career stats for a squad player
+ */
+export const getSquadPlayerStats = async (playerId: number, options?: RequestInit): Promise<PlayerStats> => {
+
+  return customFetch<PlayerStats>(getGetSquadPlayerStatsUrl(playerId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSquadPlayerStatsQueryKey = (playerId: number,) => {
+    return [
+    `/api/squad/${playerId}/stats`
+    ] as const;
+    }
+
+
+export const getGetSquadPlayerStatsQueryOptions = <TData = Awaited<ReturnType<typeof getSquadPlayerStats>>, TError = ErrorType<unknown>>(playerId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSquadPlayerStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSquadPlayerStatsQueryKey(playerId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSquadPlayerStats>>> = ({ signal }) => getSquadPlayerStats(playerId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(playerId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSquadPlayerStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSquadPlayerStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getSquadPlayerStats>>>
+export type GetSquadPlayerStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get career stats for a squad player
+ */
+
+export function useGetSquadPlayerStats<TData = Awaited<ReturnType<typeof getSquadPlayerStats>>, TError = ErrorType<unknown>>(
+ playerId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSquadPlayerStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSquadPlayerStatsQueryOptions(playerId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getAutoFillLineupUrl = (id: number,) => {
 
 
@@ -2081,6 +2458,83 @@ export function useGetTournamentStandings<TData = Awaited<ReturnType<typeof getT
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetTournamentStandingsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetTournamentTopScorersUrl = (id: number,) => {
+
+
+
+
+  return `/api/tournaments/${id}/top-scorers`
+}
+
+/**
+ * @summary Get top scorers and MVP for a tournament
+ */
+export const getTournamentTopScorers = async (id: number, options?: RequestInit): Promise<TournamentTopScorers> => {
+
+  return customFetch<TournamentTopScorers>(getGetTournamentTopScorersUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTournamentTopScorersQueryKey = (id: number,) => {
+    return [
+    `/api/tournaments/${id}/top-scorers`
+    ] as const;
+    }
+
+
+export const getGetTournamentTopScorersQueryOptions = <TData = Awaited<ReturnType<typeof getTournamentTopScorers>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTournamentTopScorers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTournamentTopScorersQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTournamentTopScorers>>> = ({ signal }) => getTournamentTopScorers(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTournamentTopScorers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTournamentTopScorersQueryResult = NonNullable<Awaited<ReturnType<typeof getTournamentTopScorers>>>
+export type GetTournamentTopScorersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get top scorers and MVP for a tournament
+ */
+
+export function useGetTournamentTopScorers<TData = Awaited<ReturnType<typeof getTournamentTopScorers>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTournamentTopScorers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTournamentTopScorersQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

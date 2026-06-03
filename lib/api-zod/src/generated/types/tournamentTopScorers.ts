@@ -5,8 +5,9 @@
  * FootballLive API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { TopScorer } from './topScorer';
 
-export interface AdminLoginInput {
-  email?: string;
-  password: string;
+export interface TournamentTopScorers {
+  topScorers: TopScorer[];
+  mvp: TopScorer[];
 }

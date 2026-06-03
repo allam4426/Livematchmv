@@ -30,6 +30,11 @@ function toEmbedUrl(raw: string): string {
   const dm = raw.match(/dailymotion\.com\/video\/([A-Za-z0-9]+)/);
   if (dm) return `https://www.dailymotion.com/embed/video/${dm[1]}?autoplay=1`;
 
+  // Facebook Live / Facebook Video
+  if (/facebook\.com|fb\.watch/.test(raw)) {
+    return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(raw)}&width=1280&show_text=false&autoplay=true&allowfullscreen=true`;
+  }
+
   return raw;
 }
 

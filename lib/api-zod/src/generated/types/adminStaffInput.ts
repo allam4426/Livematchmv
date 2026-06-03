@@ -6,7 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AdminLoginInput {
-  email?: string;
+export interface AdminStaffInput {
+  email: string;
+  name: string;
   password: string;
 }

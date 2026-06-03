@@ -81,11 +81,15 @@ export const HealthCheckResponse = zod.object({
  * @summary Admin login
  */
 export const AdminLoginBody = zod.object({
+  "email": zod.string().optional(),
   "password": zod.string()
 })
 
 export const AdminLoginResponse = zod.object({
-  "authenticated": zod.boolean()
+  "authenticated": zod.boolean(),
+  "role": zod.enum(['superadmin', 'staff']).optional(),
+  "email": zod.string().optional(),
+  "name": zod.string().optional()
 })
 
 
@@ -93,7 +97,10 @@ export const AdminLoginResponse = zod.object({
  * @summary Admin logout
  */
 export const AdminLogoutResponse = zod.object({
-  "authenticated": zod.boolean()
+  "authenticated": zod.boolean(),
+  "role": zod.enum(['superadmin', 'staff']).optional(),
+  "email": zod.string().optional(),
+  "name": zod.string().optional()
 })
 
 
@@ -101,7 +108,44 @@ export const AdminLogoutResponse = zod.object({
  * @summary Get admin auth status
  */
 export const AdminMeResponse = zod.object({
-  "authenticated": zod.boolean()
+  "authenticated": zod.boolean(),
+  "role": zod.enum(['superadmin', 'staff']).optional(),
+  "email": zod.string().optional(),
+  "name": zod.string().optional()
+})
+
+
+/**
+ * @summary List all staff accounts
+ */
+export const ListAdminStaffResponseItem = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "name": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListAdminStaffResponse = zod.array(ListAdminStaffResponseItem)
+
+
+/**
+ * @summary Create a staff account
+ */
+export const CreateAdminStaffBody = zod.object({
+  "email": zod.string(),
+  "name": zod.string(),
+  "password": zod.string()
+})
+
+
+/**
+ * @summary Delete a staff account
+ */
+export const DeleteAdminStaffParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteAdminStaffResponse = zod.object({
+  "success": zod.boolean()
 })
 
 
@@ -266,6 +310,56 @@ export const UpdateSquadPlayerResponse = zod.object({
 export const RemoveSquadPlayerParams = zod.object({
   "id": zod.coerce.number(),
   "playerId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Get a single squad player by ID
+ */
+export const GetSquadPlayerParams = zod.object({
+  "playerId": zod.coerce.number()
+})
+
+export const GetSquadPlayerResponse = zod.object({
+  "id": zod.number(),
+  "teamId": zod.number(),
+  "playerNumber": zod.string(),
+  "playerName": zod.string(),
+  "position": zod.string().nullish(),
+  "role": zod.enum(['player', 'coach', 'captain']),
+  "isStarting": zod.boolean()
+})
+
+
+/**
+ * @summary Get career stats for a squad player
+ */
+export const GetSquadPlayerStatsParams = zod.object({
+  "playerId": zod.coerce.number()
+})
+
+export const GetSquadPlayerStatsResponse = zod.object({
+  "player": zod.object({
+  "id": zod.number(),
+  "teamId": zod.number(),
+  "playerNumber": zod.string(),
+  "playerName": zod.string(),
+  "position": zod.string().nullish(),
+  "role": zod.enum(['player', 'coach', 'captain']),
+  "isStarting": zod.boolean()
+}),
+  "team": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "shortName": zod.string().nullable(),
+  "logoUrl": zod.string().nullable()
+}).nullish(),
+  "goals": zod.number(),
+  "assists": zod.number(),
+  "yellowCards": zod.number(),
+  "redCards": zod.number(),
+  "ownGoals": zod.number(),
+  "appearances": zod.number()
 })
 
 
@@ -482,6 +576,37 @@ export const GetTournamentStandingsResponse = zod.object({
   "points": zod.number(),
   "formGuide": zod.array(zod.enum(['W', 'D', 'L']))
 })))
+})
+
+
+/**
+ * @summary Get top scorers and MVP for a tournament
+ */
+export const GetTournamentTopScorersParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetTournamentTopScorersResponse = zod.object({
+  "topScorers": zod.array(zod.object({
+  "playerName": zod.string(),
+  "playerNumber": zod.string().nullish(),
+  "teamId": zod.number(),
+  "teamName": zod.string(),
+  "teamShortName": zod.string().nullish(),
+  "teamLogoUrl": zod.string().nullish(),
+  "goals": zod.number(),
+  "assists": zod.number()
+})),
+  "mvp": zod.array(zod.object({
+  "playerName": zod.string(),
+  "playerNumber": zod.string().nullish(),
+  "teamId": zod.number(),
+  "teamName": zod.string(),
+  "teamShortName": zod.string().nullish(),
+  "teamLogoUrl": zod.string().nullish(),
+  "goals": zod.number(),
+  "assists": zod.number()
+}))
 })
 
 
