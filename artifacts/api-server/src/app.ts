@@ -6,7 +6,6 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { db, matchesTable, tournamentsTable, squadsTable } from "@workspace/db";
 
-const BASE_URL = "https://www.livematchmv.online";
 
 const app: Express = express();
 
