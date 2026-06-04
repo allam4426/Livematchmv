@@ -182,7 +182,7 @@ export default function Home() {
   );
 
   // Active custom image spotlights (sorted by sortOrder)
-  const activeCustom: CarouselItem[] = (customSpotlights ?? [])
+  const activeCustom: CarouselItem[] = (Array.isArray(customSpotlights) ? customSpotlights : [])
     .filter(s => s.active)
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map(s => ({ kind: "image" as const, data: s }));
